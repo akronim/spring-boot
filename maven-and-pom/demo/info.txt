@@ -1,0 +1,14 @@
+# compile
+$ mvn compile
+
+# test
+$ mvn test
+
+# package
+$ mvn package
+
+# clean install
+$ mvn clean install
+
+# generate documentation
+$ mvn javadoc:javadoc
