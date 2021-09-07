@@ -1,0 +1,31 @@
+GET http://localhost:8080/emp/get/all HTTP/1.1
+
+###
+
+POST http://localhost:8080/emp/add HTTP/1.1
+content-type: application/json
+
+{
+    "employeeId": 3,
+    "name": "Alex",
+    "address": "NY"
+}
+
+###
+
+PUT http://localhost:8080/emp/edit HTTP/1.1
+content-type: application/json
+
+{
+    "employeeId": 1,
+    "name": "John",
+    "address": "Dublin"
+}
+
+###
+
+DELETE http://localhost:8080/emp/delete?empId=2 HTTP/1.1
+
+###
+
+DELETE http://localhost:8080/emp/delete-v2/1 HTTP/1.1
