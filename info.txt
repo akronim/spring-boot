@@ -57,4 +57,27 @@ $ mvn clean install
 $ mvn javadoc:javadoc
 
 
-next: 11
+# spring-boot and mongodb
+https://start.spring.io/
+    => Spring Web, Embedded MongoDB Database
+
+https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
+
+<dependency>
+    <groupId>org.mongodb</groupId>
+    <artifactId>mongo-java-driver</artifactId>
+    <version>3.12.10</version>
+</dependency>
+
+<dependency>
+	<groupId>de.flapdoodle.embed</groupId>
+	<artifactId>de.flapdoodle.embed.mongo</artifactId>
+	<!-- <scope>test</scope> -->
+</dependency>
+
+application.properties: spring.data.mongodb.port=27017
+
+MongoDB shell:
+$ mongo --port 27017
+
+next: 24

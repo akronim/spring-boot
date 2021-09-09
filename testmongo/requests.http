@@ -1,0 +1,32 @@
+GET http://localhost:8080/employee/get/all HTTP/1.1
+
+###
+
+POST http://localhost:8080/employee/add HTTP/1.1
+content-type: application/json
+
+{
+    "firstName": "Alex",
+    "lastName": "Lapp",
+    "address": "NY"
+}
+
+###
+
+PUT http://localhost:8080/employee/edit HTTP/1.1
+content-type: application/json
+
+{
+    "id": "613a545213b99e428ce901e9",
+    "firstName": "John",
+    "lastName": "Doe",
+    "address": "Dublin"
+}
+
+###
+
+DELETE http://localhost:8080/employee/delete?id=613a5622124bd4140794ae12 HTTP/1.1
+
+###
+
+DELETE http://localhost:8080/employee/delete-v2/613a5660124bd4140794ae15 HTTP/1.1
