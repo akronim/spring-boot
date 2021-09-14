@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>$!pageTitle</title>
+
+        <style>
+            body {
+                background-color: LightSkyBlue;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div>$!layout_key</div>
+        <div>
+            <a href="/">Home</a>
+        </div>
+        <p/>
+        $body_content
+        <p/>
+
+    </body>
+</html>

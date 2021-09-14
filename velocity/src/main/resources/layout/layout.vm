@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <title>$!pageTitle</title>
+        <style>
+            body {
+                background-color: lightgreen;
+            }
+
+            .request {
+                color: maroon;
+                margin-left: 40px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div>$!layout_key</div>
+        <div>
+            <a href="/">Home</a>
+        </div>
+
+        <p/>
+        $body_content
+        <p/>
+
+        <p/>
+        <div>
+            <a href="$!link" target="_blank">$!linkLabel</a>
+        </div>
+    </body>
+</html>
