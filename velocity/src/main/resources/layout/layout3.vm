@@ -1,12 +1,13 @@
 <html>
     <head>
         <title>$!pageTitle</title>
+
         <style>
             body {
-                background-color: lightgreen;
+                background-color: LightGoldenRodYellow;
             }
 
-            .request {
+            h1 {
                 color: maroon;
                 margin-left: 40px;
             }
@@ -15,15 +16,15 @@
     <body>
 
         <div>$!layout_key</div>
+
         <div>
             <a href="/">Home</a>
         </div>
 
         <p/>
-        $body_content
+        $screen_content
         <p/>
 
-        <p/>
         <div>
             <a href="$!link" target="_blank">$!linkLabel</a>
         </div>

@@ -9,14 +9,23 @@
         </style>
     </head>
     <body>
+        <div>
+            #parse("/fragments/header.vm")
+        </div>
 
         <div>$!layout_key</div>
         <div>
             <a href="/">Home</a>
         </div>
-        <p/>
-        $body_content
-        <p/>
 
+        <div>
+
+            $screen_content
+
+        </div>
+
+        <div>
+            #parse("/fragments/footer.vm")
+        </div>
     </body>
 </html>

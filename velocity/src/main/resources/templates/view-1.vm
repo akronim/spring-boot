@@ -1,16 +1,13 @@
-Index content
-
-<div>Demos:</div>
 <div>
     <ul>
         <li>
             <div>
-                <a href="/hello">Hello</a>
+                <a href="/view-2">View 2</a>
             </div>
         </li>
         <li>
             <div>
-                <a href="/person">Person</a>
+                <a href="/view-3">View 3</a>
             </div>
         </li>
     </ul>
