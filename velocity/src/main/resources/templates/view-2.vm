@@ -1,3 +1,6 @@
+ <div>$request.getRequestURI()</div>
+ ## https://dotcms.com/docs/latest/request-response-and-session
+
 <table>
     <tr>
         <th>First Name</th>

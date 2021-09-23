@@ -36,11 +36,6 @@ public class HomeController extends BaseController {
 
 		model.addAttribute("users", users);
 
-		// User user = new User();
-		// user.setFirstName("test");
-		// user.setLastName("test");
-
-		// model.addAttribute(user);
 		return "view-2";
 	}
 
