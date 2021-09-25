@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.mongo</groupId>
-	<artifactId>mongo2</artifactId>
+	<artifactId>mongo-template</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>mongo2</name>
+	<name>mongo-template</name>
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>11</java.version>
