@@ -1,0 +1,68 @@
+GET http://localhost:8080/employee/ HTTP/1.1
+
+###
+POST http://localhost:8080/employee/ HTTP/1.1
+content-type: application/json
+
+{
+    "firstName": "Alex",
+    "lastName": "Lapp",
+    "salary": 1000,
+    "address": {
+        "line1": "Abc",
+        "line2": "Def",
+        "city": "NY",
+        "state": "NY",
+        "zipCode": 12345
+    }
+}
+
+###
+PUT http://localhost:8080/employee/ HTTP/1.1
+content-type: application/json
+
+{
+  "id": "614f36698eb9dd4c2e9529bb",
+  "firstName": "Larry",
+  "lastName": "King",
+  "address": {
+    "line1": "Lorem 3",
+    "line2": "Ipsum 4",
+    "city": "AA",
+    "state": "BB",
+    "zipCode": 123
+  },
+  "salary": 1000.0
+}
+
+###
+DELETE http://localhost:8080/employee/delete?id=614f3ab0086ff30c6641bb3b HTTP/1.1
+
+###
+DELETE http://localhost:8080/employee/delete-v2/614f3ab0086ff30c6641bb3b HTTP/1.1
+
+###
+DELETE http://localhost:8080/employee/delete-v3?id=614f3c4290cdee53a33ea857 HTTP/1.1
+
+###
+GET http://localhost:8080/employee/page HTTP/1.1
+
+###
+GET http://localhost:8080/employee/page?pagesize=5 HTTP/1.
+
+### 
+GET http://localhost:8080/employee/example HTTP/1.1
+content-type: application/json
+
+{
+  "firstName": "Phillip"
+}
+
+### 
+GET http://localhost:8080/employee/firstname?firstname=J HTTP/1.1
+
+### 
+GET http://localhost:8080/employee/zipcode?zipcode=123 HTTP/1.1
+
+### 
+GET http://localhost:8080/employee/salary?salary=4000 HTTP/1.1
