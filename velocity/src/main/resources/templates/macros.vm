@@ -62,13 +62,13 @@
 
 
 *# #if($arg4)#*
-  *#<div>4a $arg4</div>#*
+  *#<div>4a $arg4 | Best: if not null</div>#*
 *# #end#*
 *# #if($arg4 == true)#*
   *#<div>4b $arg4</div>#*
 *# #end#*
 *# #if(!$arg4)#*
-  *#<div>4c $arg4</div>#*
+  *#<div>4c $arg4 | Best: if null</div>#*
 *# #end#*
 *# #if($arg4 == false)#*
   *#<div>4d $arg4</div>#*
