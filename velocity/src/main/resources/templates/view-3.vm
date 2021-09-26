@@ -5,7 +5,7 @@
 #renderTableRows( $color $request )
 </table>
 
-#renderTestMacro()
+#renderTestMacro("foo" true false )
 <div>$testVar</div>
 
 <script type="text/javascript">

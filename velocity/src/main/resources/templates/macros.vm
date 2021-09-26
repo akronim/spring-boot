@@ -6,11 +6,79 @@
 #end
 #end
 
-#macro(renderTestMacro)
+#macro(renderTestMacro $arg1 $arg2 $arg3 $arg4 )
 #set($testVar = "#*
 *#<div>lorem</div>#*
 *# #if(1==2)#*
   *#<div>ipsum</div>#*
 *# #end#*
+*# #if($arg1)#*
+  *#<div>1 $arg1</div>#*
+*# #end#*
+
+*# #if($arg2)#*
+  *#<div>2a $arg2</div>#*
+*# #end#*
+*# #if($arg2 == true)#*
+  *#<div>2b $arg2</div>#*
+*# #end#*
+*# #if(!$arg2)#*
+  *#<div>2c $arg2</div>#*
+*# #end#*
+*# #if($arg2 == false)#*
+  *#<div>2d $arg2</div>#*
+*# #end#*
+*# #if($!{arg2})#*
+  *#<div>2e $arg2</div>#*
+*# #end#*
+*# #if($!{arg2} == true)#*
+  *#<div>2f $arg3</div>#*
+*# #end#*
+*# #if($!{arg2} == false)#*
+  *#<div>2g $arg2</div>#*
+*# #end#*
+
+*# #if($arg3)#*
+  *#<div>3a $arg3</div>#*
+*# #end#*
+*# #if($arg3 == true)#*
+  *#<div>3b $arg3</div>#*
+*# #end#*
+*# #if(!$arg3)#*
+  *#<div>3c $arg3</div>#*
+*# #end#*
+*# #if($arg3 == false)#*
+  *#<div>3d $arg3</div>#*
+*# #end#*
+*# #if($!{arg3})#*
+  *#<div>3e $arg3</div>#*
+*# #end#*
+*# #if($!{arg3} == true)#*
+  *#<div>3f $arg3</div>#*
+*# #end#*
+*# #if($!{arg3} == false)#*
+  *#<div>3g $arg3</div>#*
+*# #end#*
+
+
+*# #if($arg4)#*
+  *#<div>4a $arg4</div>#*
+*# #end#*
+*# #if($arg4 == true)#*
+  *#<div>4b $arg4</div>#*
+*# #end#*
+*# #if(!$arg4)#*
+  *#<div>4c $arg4</div>#*
+*# #end#*
+*# #if($arg4 == false)#*
+  *#<div>4d $arg4</div>#*
+*# #end#*
+*# #if($!{arg4})#*
+  *#<div>4e $arg4</div>#*
+*# #end#*
+*# #if($arg4 == false || $arg4 == true)#*
+  *#<div>4f $arg4</div>#*
+*# #end#*
+
 *#<div>dolor</div>#*")
 #end
