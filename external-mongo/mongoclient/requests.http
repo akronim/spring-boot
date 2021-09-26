@@ -1,0 +1,56 @@
+GET http://localhost:8080/books/ HTTP/1.1
+
+###
+
+POST http://localhost:8080/books/ HTTP/1.1
+content-type: application/json
+
+  {
+    "title": "Test Book",
+    "isbn": "1935182722",
+    "pageCount": 592,
+    "status": "PUBLISH",
+    "authors": [
+      "Foo Bar"
+    ],
+    "categories": [
+      "Java"
+    ]
+  }
+
+###
+
+PUT http://localhost:8080/books/ HTTP/1.1
+content-type: application/json
+
+  {
+    "_id": 2,
+    "title": "Test Book 2",
+    "isbn": "1935182722",
+    "pageCount": 592,
+    "status": "PUBLISH",
+    "authors": [
+      "Foo Bar"
+    ],
+    "categories": [
+      "Java"
+    ]
+  }
+
+###
+DELETE http://localhost:8080/books/delete/?id=9 HTTP/1.1
+
+###
+DELETE http://localhost:8080/books/delete-v2/14 HTTP/1.1
+
+###
+DELETE http://localhost:8080/books/delete-v3?id=13 HTTP/1.1
+
+###
+GET http://localhost:8080/books/page?pagesize=20&fields=title,isbn,pageCount&sortby=pageCount&pageno=20 HTTP/1.1
+
+###
+GET http://localhost:8080/books/countpage HTTP/1.1
+
+###
+GET http://localhost:8080/books/category?category=Java,Internet HTTP/1.1
