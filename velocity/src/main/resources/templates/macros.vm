@@ -1,5 +1,16 @@
-#macro( tablerows $color $somelist )
-  #foreach( $something in $somelist )
-      <tr><td bgcolor=$color>$something</td></tr>
-  #end
+#macro( renderTableRows $color $somelist )
+#foreach( $something in $somelist )
+    <tr>
+        <td bgcolor="$color">$something $foreach.count</td>
+    </tr>
+#end
+#end
+
+#macro(renderTestMacro)
+#set($testVar = "#*
+*#<div>lorem</div>#*
+*# #if(1==2)#*
+  *#<div>ipsum</div>#*
+*# #end#*
+*#<div>dolor</div>#*")
 #end
