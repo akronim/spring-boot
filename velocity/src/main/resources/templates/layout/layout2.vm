@@ -54,12 +54,9 @@
         <div>
             <a href="/">Home</a>
         </div>
-
-        <p/>
+        
         $screen_content
-        <p/>
-
-        <p/>
+        
         <div>
             <a href="$!link" target="_blank">$!linkLabel</a>
         </div>
