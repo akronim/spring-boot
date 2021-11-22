@@ -1,89 +1,73 @@
 
 ### docker container
+#### instalation
 https://www.bmc.com/blogs/mongodb-docker-container/
 
 ```
 sudo apt update && sudo apt upgrade -y
 ```
-#### Install prerequisite packages
-```
-sudo apt install apt-transport-https ca-certificates curl software-properties-common
-```
-#### Add the GPG key from the official Docker repository
-```
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-```
-#### Add the official docker repository to APT sources
-```
-sudo add-apt-repository \
-"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-```
-
-```
-sudo apt update
-```
+#### checks
 #### Verify the docker repository
 ```
 apt-cache policy docker-ce
-```
-#### Install the Docker community edition
-```
-sudo apt install docker-ce
 ```
 #### Check the status
 ```
 sudo systemctl status docker
 ```
-#### Docker Compose
-```
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.1.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-```
-#### Apply executable permissions for the downloaded binary
-```
-sudo chmod +x /usr/local/bin/docker-compose
-```
-#### Verify the Docker Compose installation
+#### Verify the Docker Compose
 ```
 docker-compose --version
 ```
-
-
-
-### docker version
+#### docker version
 ```
 docker --version
 ```
 
+### docker-compose.yml
 
 ```
 $ touch docker-compose.yml
 ```
-
 ```
 $ docker-compose -f docker-compose.yml up
 ```
-
+```
+$ docker-compose up
+```
+#### detached mode
+```
+$ docker-compose up -d
+```
 ```
 $ docker-compose down
 ```
-
+```
+$ docker-compose start
+```
 ```
 $ docker-compose stop
 ```
 
-```
-$ docker-compose start
-```
+### Spring Boot - creating project
+https://start.spring.io/
 
-```
-$ docker-compose up -d
-```
+- Maven Project
+- Java
+- Spring Boot version: default
+- Packagin: Jar
+- Java version: 11
+- Dependencies: 
+    - Lombok
+    - Spring Web
+    - Spring Data MongoDB
+- generate
 
-# Mongo Express:
+### Mongo Express:
 http://localhost:8081/
 
 
-### importing:
+### importing data:
 ```
 $ mongoimport --host=localhost:27017 --username=rootuser --password=rootpass --authenticationDatabase admin --db=bookdb --collection=books --drop --file=books.json --jsonArray
 ```
@@ -96,10 +80,10 @@ mongoimport --uri "mongodb://rootuser:rootpass@localhost:27017/bookdb?authSource
 mongo --host=localhost:27017 --username=rootuser --password=rootpass --authenticationDatabase admin
 ```
 ```
-var file = cat('./books.json');   # file name
-use bookdb                        # db name
-var f = JSON.parse(file);         # convert string to JSON
-db.books.insert(f)          	  # collection name
+var file = cat('./books.json');   	# file name
+use bookdb                        	# db name
+var f = JSON.parse(file);         	# convert string to JSON
+db.books.insert(f)          	  	# collection name
 ```
 
 ### connect - 1
@@ -107,15 +91,15 @@ db.books.insert(f)          	  # collection name
 mongo --host=localhost:27017 --username=rootuser --password=rootpass --authenticationDatabase admin
 ```
 
-# Mongo Shell
+### Mongo Shell
 $ docker ps
 $ docker exec -it {mongo container id} bash
 root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
 
 > show dbs;
 
-# data types
-# bson
+### data types
+#### bson
 
 {
 	string: "String of text",
@@ -129,7 +113,7 @@ root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
 	no_value: null
 }
 
-# create a db
+#### create a db
 > use amigoscode;
 > db.getName();
 > db.createCollection("hello");
@@ -137,7 +121,7 @@ root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
 
 > db.help();
 
-# collection/table
+#### collection/table
 > db.createCollection("person");
 > show collections
 > db.person.stats();
@@ -145,7 +129,7 @@ root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
 
 > db.createCollection("person", { capped: true, size: 6142800, max: 3000 });
 
-# another way of creating collection
+#### another way of creating collection
 > student = {
     "firstName": "John",
         "lastName": "Doe",
@@ -162,72 +146,72 @@ root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
 > db.student.count();
 > db.student.find().pretty();
 
-# insert many
+#### insert many
 > db.student.insertMany(students);
 
-# querying
+#### querying
 > db.student.find({}).pretty();
 > db.student.find({}, {_id: 0}).pretty(); # do not show id
 > db.student.find({}).limit(3).pretty();
 > db.student.find({}, { totalSpentInBooks: 1 }).limit(5).pretty();
 > db.student.find({}).limit(10).sort({name:1}).pretty();
 > db.student.find({ firstName: 'Lon'  }).pretty();
-# or
+##### or
 > db.student.find({ $or: [{firstName: 'Lon'}, {favouriteSubjects: 'Romance'}]  }).pretty();
 
-# where array size is ...
+#### where array size is ...
 > db.student.find({ favouriteSubjects: { $size: 3 }})
 > db.student.find({ favouriteSubjects: { $not: { $size: 3 } }})
 
-# where first item in array is ...
+#### where first item in array is ...
 > db.student.find({ "favouriteSubjects.0": "Horror"})
 
-# get if array contains elements gte 80
+#### get if array contains elements gte 80
 > db.student.find({ grades: {$elemMatch: {$gte: 80 } } })
 
-# distinct values
+#### distinct values
 > db.student.distinct('country')
 
-# gte lte
+#### gte lte
 > db.student.find( { totalSpentInBooks: { $gte: 35 } } ).count()
 > db.student.find( {favouriteSubjects : {$exists:true}, $where:'this.favouriteSubjects.length>=3'} )
 
-# in
+#### in
 > db.student.find({ firstName: { $in: ['Lon', 'Gabriell', 'Eddie'] }})
 
-# exists - if a field exists
+#### exists - if a field exists
 > db.student.find( { asdf: { $exists: true } } ).count()
 
-# check type (here, 2 stands for string)
+#### check type (here, 2 stands for string)
 > db.student.find( { firstName: { $type: 2 } } ).count()
 
-# get only firstName and lastName
+#### get only firstName and lastName
 > db.student.find( { firstName: 'Lon' }, { firstName: 1, lastName: 1 } ).pretty(); 
-# exclude firstName and lastName
+#### exclude firstName and lastName
 > db.student.find( { firstName: 'Lon' }, { firstName: 0, lastName: 0 } ).pretty();
 
-# update
+#### update
 > db.student.update({ _id: ObjectId("6104517a09b144e5ac651d9b") }, { $set: { firstName: 'Mark' } });
-# update + increment
-> db.student.update({ _id: ObjectId("6104517a09b144e5ac651d9b") }, { $inc: { totalSpentInBooks: 999 } });
 
+#### update + increment
+> db.student.update({ _id: ObjectId("6104517a09b144e5ac651d9b") }, { $inc: { totalSpentInBooks: 999 } });
 > db.student.update({ _id: ObjectId("6104517a09b144e5ac651d9b") }, { $pull: { favouriteSubjects: "Adventure|Romance" } });
 > db.student.update({ _id: ObjectId("6104517a09b144e5ac651d9b") }, { $push: { favouriteSubjects: "Adventure|Romance" } });
 
-# update many
+#### update many
 > db.student.updateMany({country: 'China'}, {$set: {country: 'Italy'}})
 
-# replace a record where ... with ...
+#### replace a record where ... with ...
 > db.student.replaceOne({firstName: 'Lon'}, {continent: 'Europe', country: 'Italy'})
 
-# get rid of property
+#### get rid of property
 > db.student.update({ _id: ObjectId("6104517a09b144e5ac651d9b") }, { $unset: { lastName: 1 } });
 
-# delete
+#### delete
 > db.student.deleteOne({ _id: ObjectId("61044da209b144e5ac651d9a") });
 > db.student.deleteMany( {gender: 'M' });
 
-# bulk actions
+#### bulk actions
 > db.student.bulkWrite(
 	[
 		{ insertOne: 
@@ -258,7 +242,7 @@ root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
 	]
 );
 
-# text indexing
+#### text indexing
 db.stores.insert(
    [
      { _id: 1, name: "Java Hut", description: "Coffee and cakes" },
@@ -275,7 +259,7 @@ db.stores.insert(
 	{ score: { $meta: "textScore" } }).sort( { score: { $meta: "textScore" } } )
 
 
-# aggregation
+#### aggregation
 
 db.purchase_orders.insertMany(
      [
@@ -289,13 +273,13 @@ db.purchase_orders.insertMany(
      ]
 )
 
-# count - find out how many toothbrushes were sold
+#### count - find out how many toothbrushes were sold
 db.purchase_orders.count({product: "toothbrush"})
 
-# distinct - Find list of all products sold
+#### distinct - Find list of all products sold
 db.purchase_orders.distinct("product")
 
-# Find the total amount of money spent by each customer
+#### Find the total amount of money spent by each customer
 db.purchase_orders.aggregate(
      [
 		  // filter
@@ -306,7 +290,7 @@ db.purchase_orders.aggregate(
      ]
 )
 
-# Find how much has been spent on each product and sort it by price
+#### Find how much has been spent on each product and sort it by price
 db.purchase_orders.aggregate(
      [
           {$match: {} },
@@ -315,7 +299,7 @@ db.purchase_orders.aggregate(
      ]
 )
 
-# Find how much money each customer has spent on toothbrushes and pizza
+#### Find how much money each customer has spent on toothbrushes and pizza
 db.purchase_orders.aggregate(
      [
           //{$match: {customer: {$in: ["Mike", "Karen"]}}},
@@ -342,7 +326,7 @@ docker system prune -a
 
 #### all docker containers:
 docker container ls -a
-# or:
+##### or:
 docker ps -a
 
 #### stopping a container:
@@ -369,9 +353,12 @@ docker volume ls
 #### remove all unused volumes:
 docker volume prune
 
-# find out what is using port 80
+
+#### find out what is using port 80
+```
 sudo netstat -tulpn | grep :80
-# or:
+```
+#### or:
 sudo fuser 80/tcp
 
 

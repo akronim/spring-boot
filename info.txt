@@ -80,4 +80,3 @@ application.properties: spring.data.mongodb.port=27017
 MongoDB shell:
 $ mongo --port 27017
 
-next: 25

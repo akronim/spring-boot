@@ -1,0 +1,61 @@
+###
+POST http://localhost:8080/api/v1/students
+Content-Type: application/json
+
+[
+  {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "email": "jane@doe.com",
+    "gender": "FEMALE",
+    "address": {
+      "country": "DT",
+      "postCode": "123",
+      "city": "OP"
+    },
+    "favouriteSubjects": [
+      "music",
+      "english",
+      "it"
+    ],
+    "totalSpentInBooks": 14,
+    "createdAt": "2021-11-22T18:22:16.177"
+  },
+  {
+    "firstName": "Mark",
+    "lastName": "Haas",
+    "email": "mark@haas.com",
+    "gender": "MALE",
+    "address": {
+      "country": "FG",
+      "postCode": "567",
+      "city": "KL"
+    },
+    "favouriteSubjects": [
+      "physics",
+      "chemistry",
+      "it"
+    ],
+    "totalSpentInBooks": 8,
+    "createdAt": "2021-11-22T18:22:16.177"
+  }
+]
+
+###
+GET http://localhost:8080/api/v1/students
+
+###
+GET http://localhost:8080/api/v1/students/619c00b293734c4b937e75f8
+
+###
+PATCH http://localhost:8080/api/v1/students/619c00b293734c4b937e75f8
+Content-Type: application/json
+
+{
+    "email": "john@smith.com",
+    "address": {
+      "country": "NM",
+      "postCode": "468",
+      "city": "GB"
+    }
+}
