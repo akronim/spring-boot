@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -23,12 +24,25 @@ public class HelloServiceMockTest {
     @BeforeEach
     void setMockOutput() {
         when(helloRepository.get()).thenReturn("Hello Mockito From Repository");
+        when(helloRepository.getMessage()).thenReturn("foo");
     }
 
     @DisplayName("Test Mock helloService + helloRepository")
     @Test
     void testGet() {
         assertEquals("Hello Mockito From Repository", helloService.get());
+    }
+
+    @Test
+    public void getMessage() {
+        String message = helloService.getMessage();
+        assertEquals(message, "foo");
+    }
+
+    @Test
+    public void getFormattedMessage() {
+        String formattedMessage = helloService.getFormattedMessage();
+        assertNull(formattedMessage);
     }
 
 }

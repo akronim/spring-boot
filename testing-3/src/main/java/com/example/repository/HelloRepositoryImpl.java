@@ -8,4 +8,14 @@ public class HelloRepositoryImpl implements HelloRepository {
     public String get() {
         return "Hello JUnit 5";
     }
+
+    @Override
+    public String getMessage() {
+        return "Lorem ipsum dolor sit amet.";
+    }
+
+    @Override
+    public String getFormattedMessage() {
+        return "Hi there! " + getMessage();
+    }
 }

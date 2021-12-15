@@ -15,4 +15,12 @@ public class HelloServiceImpl implements HelloService {
         return helloRepository.get();
     }
 
+    public String getMessage(){
+        return helloRepository.getMessage();
+    }
+  
+    public String getFormattedMessage() {
+        return helloRepository.getFormattedMessage();
+    }
+
 }

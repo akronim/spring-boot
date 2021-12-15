@@ -2,16 +2,23 @@ package com.example.services;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.example.repository.HelloRepository;
 
 @SpringBootTest
-public class HelloServiceTest {
+public class HelloServiceSpyTest {
 
     @Autowired
     HelloService helloService;
+
+    @SpyBean
+    private HelloRepository helloRepository;
 
     @DisplayName("Test Spring @Autowired Integration")
     @Test
@@ -21,14 +28,18 @@ public class HelloServiceTest {
 
     @Test
     public void getMessage() {
+        String mockMessage = "mock message.";
+
+        Mockito.when(helloRepository.getMessage()).thenReturn(mockMessage);
+
         String message = helloService.getMessage();
-        assertEquals(message, "Lorem ipsum dolor sit amet.");
+        assertEquals(message, mockMessage);
     }
 
     @Test
     public void getFormattedMessage() {
         String formattedMessage = helloService.getFormattedMessage();
-        assertEquals(formattedMessage, "Hi there! " + "Lorem ipsum dolor sit amet.");
+        assertEquals(formattedMessage, "Hi there! Lorem ipsum dolor sit amet.");
     }
 
 }
