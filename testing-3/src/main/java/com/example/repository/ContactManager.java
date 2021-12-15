@@ -1,8 +1,10 @@
-package com.programming.techie;
+package com.example.repository;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.example.entities.Contact;
 
 public class ContactManager {
 

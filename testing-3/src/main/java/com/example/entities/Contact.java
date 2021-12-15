@@ -1,4 +1,4 @@
-package com.programming.techie;
+package com.example.entities;
 
 public class Contact {
     private String firstName;
