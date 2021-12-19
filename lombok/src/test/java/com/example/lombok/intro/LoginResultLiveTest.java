@@ -1,0 +1,59 @@
+package com.example.lombok.intro;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.Duration;
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+public class LoginResultLiveTest {
+
+    @Test
+    public void givenAnnotatedLoginResult_thenHasConstructorForAllFinalFields()
+    throws MalformedURLException {
+        /* LoginResult loginResult = */ new LoginResult(
+                Instant.now(),
+                "apitoken",
+                Duration.ofHours(1),
+                new URL("https://api.product.com/token-refresh"));
+    }
+
+    @Test
+    public void givenAnnotatedLoginResult_thenHasFluentGetters()
+    throws MalformedURLException {
+        Instant loginTs = Instant.now();
+        LoginResult loginResult = new LoginResult(
+                loginTs,
+                "apitoken",
+                Duration.ofHours(1),
+                new URL("https://api.product.com/token-refresh"));
+
+        assertEquals(loginResult.loginTs(), loginTs);
+        assertEquals(loginResult.authToken(), "apitoken");
+        assertEquals(loginResult.tokenValidity(), Duration.ofHours(1));
+        assertEquals(loginResult.tokenRefreshUrl(), new URL("https://api.product.com/token-refresh"));
+    }
+
+    @Test
+    public void givenAnnotatedLoginResult_whenSameApiToken_thenEqualInstances()
+    throws MalformedURLException {
+        String theSameApiToken = "testapitoken";
+
+        LoginResult loginResult1 = new LoginResult(
+                Instant.now(),
+                theSameApiToken,
+                Duration.ofHours(1),
+                new URL("https://api.product.com/token-refresh"));
+
+        LoginResult loginResult2 = new LoginResult(
+                Instant.now(),
+                theSameApiToken,
+                Duration.ofHours(2),
+                new URL("https://api.product.com/token-refresh-alt"));
+
+        assertEquals(loginResult1, loginResult2);
+    }
+
+}
