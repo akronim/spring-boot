@@ -18,4 +18,9 @@ public class HelloRepositoryImpl implements HelloRepository {
     public String getFormattedMessage() {
         return "Hi there! " + getMessage();
     }
+
+    @Override
+    public void logMessage(String message) {
+        System.out.println(message);
+    }
 }

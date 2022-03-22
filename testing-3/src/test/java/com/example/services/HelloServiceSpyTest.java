@@ -27,13 +27,21 @@ public class HelloServiceSpyTest {
     }
 
     @Test
-    public void getMessage() {
+    public void getMessage_x1() {
         String mockMessage = "mock message.";
 
         Mockito.when(helloRepository.getMessage()).thenReturn(mockMessage);
 
         String message = helloService.getMessage();
         assertEquals(message, mockMessage);
+    }
+
+    @Test
+    public void getMessage_x2() {
+        Mockito.doReturn(null).when(helloRepository).getMessage();
+
+        String message = helloService.getMessage();
+        assertEquals(null, message);
     }
 
     @Test

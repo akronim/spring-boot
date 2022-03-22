@@ -28,7 +28,7 @@ public class HelloServiceTest {
     @Test
     public void getFormattedMessage() {
         String formattedMessage = helloService.getFormattedMessage();
-        assertEquals(formattedMessage, "Hi there! " + "Lorem ipsum dolor sit amet.");
+        assertEquals(formattedMessage, "Hi there! Lorem ipsum dolor sit amet.");
     }
 
 }

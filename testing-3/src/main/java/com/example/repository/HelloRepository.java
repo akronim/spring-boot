@@ -7,4 +7,6 @@ public interface HelloRepository {
     String getMessage();
 
     String getFormattedMessage();
+
+    void logMessage(String message);
 }

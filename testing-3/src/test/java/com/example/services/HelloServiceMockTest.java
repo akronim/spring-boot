@@ -23,20 +23,20 @@ public class HelloServiceMockTest {
 
     @BeforeEach
     void setMockOutput() {
-        when(helloRepository.get()).thenReturn("Hello Mockito From Repository");
-        when(helloRepository.getMessage()).thenReturn("foo");
+        when(helloRepository.get()).thenReturn("abc 123");
+        when(helloRepository.getMessage()).thenReturn("foo 123");
     }
 
     @DisplayName("Test Mock helloService + helloRepository")
     @Test
     void testGet() {
-        assertEquals("Hello Mockito From Repository", helloService.get());
+        assertEquals("abc 123", helloService.get());
     }
 
     @Test
     public void getMessage() {
         String message = helloService.getMessage();
-        assertEquals(message, "foo");
+        assertEquals(message, "foo 123");
     }
 
     @Test
