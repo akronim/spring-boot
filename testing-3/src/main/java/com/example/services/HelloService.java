@@ -9,4 +9,8 @@ public interface HelloService {
     String getFormattedMessage();
 
     void logMessage(String message);
+
+    boolean runInGround(String location);
+
+    boolean isPlay();
 }

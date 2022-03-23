@@ -6,6 +6,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,4 +51,24 @@ public class HelloServiceSpyTest {
         assertEquals(formattedMessage, "Hi there! Lorem ipsum dolor sit amet.");
     }
 
+    // use Mockito.spy() to mock the same class you are testing
+    @Test
+    public void playTest() {
+        HelloService helloService2 = Mockito.spy(helloService);
+
+        Mockito.doReturn(true).when(helloService2).runInGround("ground");
+
+        assertEquals(true, helloService2.isPlay());
+    }
+
+    // 
+    @Test
+    public void playTest_x2() {
+        helloService.isPlay();
+
+        var result = ReflectionTestUtils.invokeMethod(helloService, "runInGround", "ground" );
+
+        assertEquals(result, true);
+        assertEquals(true, helloService.isPlay());
+    }
 }
