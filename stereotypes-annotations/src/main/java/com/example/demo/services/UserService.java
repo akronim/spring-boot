@@ -1,20 +1,14 @@
 package com.example.demo.services;
 
+import java.util.List;
+import java.util.Optional;
+
 import com.example.demo.entities.User;
-import com.example.demo.repositories.UserRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+public interface UserService {
+    User addUser(User user);
 
-@Service
-public class UserService implements IUserService {
+    Optional<User> getById(Long id);
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Override
-    public User getById(Long id) {
-        return userRepository.findById(id).orElse(null);
-    }
-
+    List<User> getUsers();
 }

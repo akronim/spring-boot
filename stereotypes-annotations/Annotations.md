@@ -1,3 +1,5 @@
+# https://github.com/Java-Techie-jt/annotations-cheatsheet
+
 ### What is Spring Bean or Components?
 During Application startup, Spring instantiates objects and adds them to the Application Context. These objects in the Application Context are called ‘Spring Beans’ or ‘Spring Components’. 
 
@@ -33,7 +35,7 @@ We can use this annotation to inject values into fields of Spring managed beans.
 
 
 
-### Spring Framework Stereotype Annotations
+### Stereotype Annotations
 #### @Component
 It is a class-level annotation. It is used to mark a Java class as a bean during the component scanning. @Repository, @Service, and @Controller are specializations of @Component.
 
