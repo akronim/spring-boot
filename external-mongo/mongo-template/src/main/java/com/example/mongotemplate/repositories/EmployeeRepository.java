@@ -1,8 +1,8 @@
-package com.mongo.mongo2.repositories;
+package com.example.mongotemplate.repositories;
 
 import java.util.List;
 
-import com.mongo.mongo2.entities.Employee;
+import com.example.mongotemplate.entities.Employee;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;

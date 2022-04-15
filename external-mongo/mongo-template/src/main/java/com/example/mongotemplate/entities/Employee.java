@@ -1,4 +1,4 @@
-package com.mongo.mongo2.entities;
+package com.example.mongotemplate.entities;
 
 import java.util.Date;
 

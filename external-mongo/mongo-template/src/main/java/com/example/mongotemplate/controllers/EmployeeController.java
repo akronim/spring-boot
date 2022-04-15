@@ -1,11 +1,11 @@
-package com.mongo.mongo2.controllers;
+package com.example.mongotemplate.controllers;
 
 import java.util.List;
 
 import javax.websocket.server.PathParam;
 
-import com.mongo.mongo2.entities.Employee;
-import com.mongo.mongo2.services.EmployeeService;
+import com.example.mongotemplate.entities.Employee;
+import com.example.mongotemplate.services.EmployeeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;

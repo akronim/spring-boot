@@ -1,10 +1,10 @@
-package com.mongo.mongo2.services;
+package com.example.mongotemplate.services;
 
 import java.util.Date;
 import java.util.List;
 
-import com.mongo.mongo2.entities.Employee;
-import com.mongo.mongo2.repositories.EmployeeRepository;
+import com.example.mongotemplate.entities.Employee;
+import com.example.mongotemplate.repositories.EmployeeRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
