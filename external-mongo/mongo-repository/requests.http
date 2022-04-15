@@ -57,3 +57,39 @@ GET http://localhost:8080/books/countpage HTTP/1.1
 
 ###
 GET http://localhost:8080/books/category?category=Java,Internet HTTP/1.1
+
+### 
+GET http://localhost:8080/books/example HTTP/1.1
+content-type: application/json
+
+{
+  "title": "Lorem ipsum",
+  "isbn": "1935182722",
+  "pageCount": 592,
+  "status": "PUBLISH",
+  "authors": [
+    "Bar Foo"
+  ],
+  "categories": [
+    "Java"
+  ]
+}
+
+### 
+GET http://localhost:8080/books/title?title=Jav HTTP/1.1
+
+
+### 
+GET http://localhost:8080/books/authors?authors=Bernerd Allmon,Jeremy Anderson HTTP/1.
+
+
+### 
+GET http://localhost:8080/books/page-count?pageCount=400 HTTP/1.1
+
+
+
+
+
+
+
+

@@ -13,6 +13,15 @@ public interface BooksRepository extends MongoRepository<Book, String> {
 
     @Query(value = "{ 'categories': { $elemMatch : { $in: ?0 } } }", fields = "{'title': 1}")
     public List<Book> getBy(String[] categories);
+
+    // query by method names
+    public List<Book> findByTitleStartingWith(String title);
+
+    public List<Book> findByAuthors(String[] authors);
+
+    // using @Query
+    @Query(value = "{'pageCount':{$gte:?0}}", fields = "{'pageCount':1, 'title':1, '_id':0}")
+    public List<Book> getAllByPageCountGTE(int pageCount);
 }
 
 // spring.jackson.default-property-inclusion=non-null

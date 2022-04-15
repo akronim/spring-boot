@@ -74,4 +74,28 @@ public class BooksController {
     public Map<String, Object> getByCategory(@RequestParam(name = "category", required = true) String[] categories) {
         return booksService.getByCategory(categories);
     }
+
+    // query by Example Executor
+    @GetMapping("/example")
+    public List<Book> getAllByExample(@RequestBody Book book) {
+        return booksService.getAllByExample(book);
+    }
+
+    // query by method names
+    @GetMapping("/title")
+    public List<Book> getAllByFirstName(@RequestParam(name = "title") String title) {
+        return booksService.getAllByFirstName(title);
+    }
+
+    // query by method names
+    @GetMapping("/authors")
+    public List<Book> getAllByAuthor(@RequestParam(name = "authors") String[] authors) {
+        return booksService.getAllByAuthor(authors);
+    }
+
+    // using @Query
+    @GetMapping("/page-count")
+    public List<Book> getAllByPageCountGTE(@RequestParam(name = "pageCount") int pageCount) {
+        return booksService.getAllByPageCountGTE(pageCount);
+    }
 }

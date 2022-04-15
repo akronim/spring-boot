@@ -8,6 +8,7 @@ import com.example.mongorepository.entities.Book;
 import com.example.mongorepository.repositories.BooksRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -62,5 +63,33 @@ public class BooksService {
         response.put("Total no of books", listOfBooks.size());
 
         return response;
+    }
+
+    // query by Example Executor
+    public List<Book> getAllByExample(Book book) {
+        Example<Book> example = Example.of(book);
+
+        // ExampleMatcher employeeMatcher = ExampleMatcher.matchingAll().withIgnoreCase("lastName", "firstName")
+        //         .withIgnorePaths("id").withNullHandler(ExampleMatcher.NullHandler.INCLUDE)
+        //         .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
+
+        List<Book> books = booksRepository.findAll(example);
+
+        return books;
+    }
+
+    // query by method names
+    public List<Book> getAllByFirstName(String title) {
+        return booksRepository.findByTitleStartingWith(title);
+    }
+
+    // query by method names
+    public List<Book> getAllByAuthor(String[] authors) {
+        return booksRepository.findByAuthors(authors);
+    }
+
+    // using @Query
+    public List<Book> getAllByPageCountGTE(int pageCount) {
+        return booksRepository.getAllByPageCountGTE(pageCount);
     }
 }
