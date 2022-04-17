@@ -1,4 +1,4 @@
-package com.mongo.testmongo.entities;
+package com.demo.mongoclient.entities;
 
 public class Employee {
     private String id;

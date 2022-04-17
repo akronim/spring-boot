@@ -1,9 +1,9 @@
-package com.mongo.testmongo.services;
+package com.demo.mongoclient.services;
 
 import java.util.List;
 
-import com.mongo.testmongo.entities.Employee;
-import com.mongo.testmongo.repositories.EmployeeRepository;
+import com.demo.mongoclient.entities.Employee;
+import com.demo.mongoclient.repositories.EmployeeRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

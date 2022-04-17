@@ -1,9 +1,9 @@
-package com.mongo.testmongo.repositories;
+package com.demo.mongoclient.repositories;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mongo.testmongo.entities.Employee;
+import com.demo.mongoclient.entities.Employee;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;

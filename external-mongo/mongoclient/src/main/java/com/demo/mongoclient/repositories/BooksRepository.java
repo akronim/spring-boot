@@ -23,10 +23,12 @@ public class BooksRepository {
 
     MongoClient getMongoClient() {
         if (mongoClient == null) {
-            ServerAddress server = new ServerAddress("localhost", 27017);
-            MongoCredential credentials = MongoCredential.createCredential("rootuser", "admin",
-                    "rootpass".toCharArray());
-            mongoClient = new MongoClient(server, credentials, MongoClientOptions.builder().build());
+            // ServerAddress server = new ServerAddress("localhost", 27017);
+            // MongoCredential credentials = MongoCredential.createCredential("rootuser", "admin",
+            //         "rootpass".toCharArray());
+            // mongoClient = new MongoClient(server, credentials, MongoClientOptions.builder().build());
+
+            mongoClient = new MongoClient("localhost", 27017);
         }
 
         return mongoClient;

@@ -1,9 +1,9 @@
-package com.mongo.testmongo.controllers;
+package com.demo.mongoclient.controllers;
 
 import java.util.List;
 
-import com.mongo.testmongo.entities.Employee;
-import com.mongo.testmongo.services.EmployeeService;
+import com.demo.mongoclient.entities.Employee;
+import com.demo.mongoclient.services.EmployeeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
