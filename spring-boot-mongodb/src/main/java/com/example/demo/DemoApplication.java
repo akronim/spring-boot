@@ -1,13 +1,10 @@
 package com.example.demo;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.demo.entities.Address;
-import com.example.demo.entities.Gender;
-import com.example.demo.entities.Student;
-import com.example.demo.repositories.StudentRepository;
+import com.example.demo.entities.Employee;
+import com.example.demo.repositories.EmployeeRepository;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -22,23 +19,22 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 
-	@Bean
-	CommandLineRunner runner(StudentRepository repository, MongoTemplate mongoTemplate) {
-		return args -> {
-			Address address = new Address("England", "London", "NE9");
-			String email = "john@smith.com";
+	// @Bean
+	// CommandLineRunner runner(EmployeeRepository repository, MongoTemplate mongoTemplate) {
+	// 	return args -> {
+	// 		String email = "john@smith.com";
 
-			Student student = new Student("John", "Smith", email, Gender.MALE, address,
-					List.of("maths", "english", "it"), BigDecimal.TEN, LocalDateTime.now());
+	// 		Employee employee = new Employee("John", "Smith", email, "Male",
+	// 				List.of("Project 3", "Project 5", "Project 6"), 5500.0, LocalDateTime.now());
 
-			repository.findStudentByEmail(email).ifPresentOrElse(s -> {
-				System.out.println(s + " already exists");
-			}, () -> {
-				System.out.println("Inserting student " + student);
-				repository.insert(student);
-			});
-		};
-	}
+	// 		repository.findEmployeeByEmail(email).ifPresentOrElse(s -> {
+	// 			System.out.println(s + " already exists");
+	// 		}, () -> {
+	// 			System.out.println("Inserting employee " + employee);
+	// 			repository.insert(employee);
+	// 		});
+	// 	};
+	// }
 
 	// Query query = new Query();
 	// query.addCriteria(Criteria.where("email").is(email));

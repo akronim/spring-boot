@@ -1,1 +1,0 @@
-mongoimport --db=bookdb --collection=books mongodb://localhost:27017 --file=C:\Users\<user>\Downloads\books.json --jsonArray

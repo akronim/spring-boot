@@ -1,4 +1,11 @@
-docker
+
+
+
+ mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --file=C:\Users\mmiskovic\Downloads\employees.json --jsonArray
+
+
+
+ docker
 
 nvm use 14
 
