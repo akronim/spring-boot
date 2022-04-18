@@ -1,12 +1,12 @@
 ###
-GET http://localhost:8080/api/v1/employees/
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/
 
 ## not working ???
 ###
-GET http://localhost:8080/api/v1/employees/625c6a85c131622dc1789587
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/625c6a85c131622dc1789587
 
 ###
-POST http://localhost:8080/api/v1/employees/add-one
+POST http://localhost:8102/mdb-spring-boot/api/v1/employees/add-one
 Content-Type: application/json
 
 {
@@ -19,13 +19,12 @@ Content-Type: application/json
     "Project 2",
     "Project 10"
   ],
-  "salary": 5600,
-  "createdAt": "2021-10-17T18:22:16.177"
+  "salary": 5600
 }
 
 
 ###
-POST http://localhost:8080/api/v1/employees/add-multiple
+POST http://localhost:8102/mdb-spring-boot/api/v1/employees/add-multiple
 Content-Type: application/json
 
 [
@@ -40,8 +39,7 @@ Content-Type: application/json
       "Project 4",
       "Project 7"
     ],
-    "salary": 3500,
-    "createdAt": "2021-11-22T18:22:16.177"
+    "salary": 3500
   },
   {
     "firstName": "Alex",
@@ -53,14 +51,13 @@ Content-Type: application/json
       "Project 1",
       "Project 9"
     ],
-    "salary": 4200,
-    "createdAt": "2021-12-22T18:22:16.177"
+    "salary": 4200
   }
 ]
 
 ## not working as expected
 ###
-PATCH http://localhost:8080/api/v1/employees/
+PATCH http://localhost:8102/mdb-spring-boot/api/v1/employees/
 Content-Type: application/json
 
 {
@@ -74,7 +71,7 @@ Content-Type: application/json
 
 
 ###
-PUT http://localhost:8080/api/v1/employees/ HTTP/1.1
+PUT http://localhost:8102/mdb-spring-boot/api/v1/employees/ HTTP/1.1
 content-type: application/json
 
 {
@@ -95,22 +92,22 @@ content-type: application/json
 }
 
 ###
-DELETE http://localhost:8080/api/v1/employees/delete/?id=2 HTTP/1.1
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete/?id=2 HTTP/1.1
 
 ###
-DELETE http://localhost:8080/api/v1/employees/delete-v2/3 HTTP/1.1
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v2/3 HTTP/1.1
 
 ###
-DELETE http://localhost:8080/api/v1/employees/delete-v3?id=4 HTTP/1.1
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=4 HTTP/1.1
 
 ###
-GET http://localhost:8080/api/v1/employees/page?pagesize=20&fields=firstName,lastName,salary&sortby=firstName&pageno=0 HTTP/1.1
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/page?pagesize=20&fields=firstName,lastName,salary&sortby=firstName&pageno=0 HTTP/1.1
 
 ###
-GET http://localhost:8080/api/v1/employees/projects?projects=Project 9,Project 10 HTTP/1.1
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/projects?projects=Project 9,Project 10 HTTP/1.1
 
 ### 
-GET http://localhost:8080/api/v1/employees/example HTTP/1.1
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/example HTTP/1.1
 content-type: application/json
 
 {
@@ -118,15 +115,15 @@ content-type: application/json
 }
 
 ### 
-GET http://localhost:8080/api/v1/employees/first-name?firstName=Al HTTP/1.1
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/first-name?firstName=Tom HTTP/1.1
 
 
 ### 
-GET http://localhost:8080/api/v1/employees/department?department=IT HTTP/1.1
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/department?department=IT HTTP/1.1
 
 
 ### 
-GET http://localhost:8080/api/v1/employees/salary?salary=4000 HTTP/1.1
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/salary?salary=4000 HTTP/1.1
 
 
 
@@ -136,7 +133,7 @@ GET http://localhost:8080/api/v1/employees/salary?salary=4000 HTTP/1.1
 
 
 ###
-PATCH http://localhost:8080/api/v1/students/619c00b293734c4b937e75f8
+PATCH http://localhost:8102/mdb-spring-boot/api/v1/students/619c00b293734c4b937e75f8
 Content-Type: application/json
 
 {

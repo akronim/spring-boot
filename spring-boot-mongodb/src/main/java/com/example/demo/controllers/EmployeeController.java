@@ -33,12 +33,6 @@ public class EmployeeController {
         return employeeService.getAllEmployees();
     }
 
-    // here we will use MongoTemplate based repository
-    @GetMapping("/{id}")
-    public Employee findEmployee(@PathVariable final String id) {
-        return employeeService.findById(id);
-    }
-
     @PostMapping("/add-one")
     public Employee addEmployee(@RequestBody Employee employee) {
         return employeeService.addEmployee(employee);
@@ -121,5 +115,11 @@ public class EmployeeController {
     @PatchMapping("/{employeeId}")
     public void testMethod(@PathVariable final String employeeId, @RequestBody final Employee employee) {
         employeeService.testMethod(employeeId, employee);
+    }
+
+    // here we will use MongoTemplate based repository
+    @GetMapping("/{id}")
+    public Employee findEmployee(@PathVariable final String id) {
+        return employeeService.findById(id);
     }
 }

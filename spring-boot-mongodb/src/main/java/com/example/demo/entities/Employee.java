@@ -30,10 +30,10 @@ public class Employee {
     private Double salary;
     // @Field("dateCreated")
     @DateTimeFormat(pattern = "dd-MM-yyyy")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Employee(String firstName, String lastName, String email, String gender, String department, 
-            List<String> projects, Double salary, LocalDateTime createdAt) {
+            List<String> projects, Double salary) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -41,6 +41,5 @@ public class Employee {
         this.department = department;
         this.projects = projects;
         this.salary = salary;
-        this.createdAt = createdAt;
     }
 }

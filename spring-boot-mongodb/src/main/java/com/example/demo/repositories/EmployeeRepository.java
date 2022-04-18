@@ -30,7 +30,7 @@ public interface EmployeeRepository extends MongoRepository<Employee, String>, C
     // void test();
 }
 
-
+// to get the JSON converter to ignore null values - application.properties
 // spring.jackson.default-property-inclusion=non-null
 
 
