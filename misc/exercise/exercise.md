@@ -1523,3 +1523,188 @@ mvn clean package
 ```
 java -jar target/mdb-spring-boot-0.0.1-SNAPSHOT.jar
 ```
+
+
+## velocity
+### pom.xml: add this dependency
+```xml
+<dependency>
+    <groupId>com.alibaba.boot</groupId>
+    <artifactId>velocity-spring-boot-starter</artifactId>
+    <version>1.0.4.RELEASE</version>
+</dependency>
+```
+
+### application.properties: add this velocity configuration
+```
+## ======= Velocity configuration =======
+spring.velocity.resource-loader-path=classpath:/velocity/views
+spring.velocity.suffix=.vm
+spring.velocity.layout-url=/layouts/layout-1.vm
+spring.velocity.screen-content-key=body_content
+## ======= Velocity configuration END =======
+```
+
+### inside src\main\resources folder create folders:
+- velocity\views\fragments
+- velocity\views\layouts
+- velocity\views\home
+
+
+### create a file: \velocity\views\fragments\footer.vm
+```
+<style>
+    .footer-container {
+        background: #63B175;
+        padding: 5px;
+    }
+</style>
+
+<div class="footer-container">
+    <h1>FOOTER</h1>
+</div>
+```
+
+
+### create a file: \velocity\views\fragments\header.vm
+```
+<style>
+    .header-container {
+        background: #63B175;
+        padding: 5px;
+    }
+</style>
+
+<div class="header-container">
+    <h1>HEADER</h1>
+</div>
+```
+
+### create a file: \velocity\views\home\view-1.vm
+```
+<style>
+    .view-1-container {
+        background-color: crimson;
+        color: white;
+        padding: 5px;
+        margin: 5px auto;
+    }
+</style>
+
+<div class="view-1-container">
+    <h1>VIEW 1</h1>
+</div>
+```
+
+### create a file: \velocity\views\layouts\layout-1.vm
+```
+<html>
+    <head>
+        <style>
+            body {
+                background-color: LightSkyBlue;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div>
+                #parse("/fragments/header.vm")
+            </div>
+
+            <!-- see application.properties -->
+            $body_content
+
+            <div>
+                #parse("/fragments/footer.vm")
+            </div>
+        </div>
+    </body>
+</html>
+```
+
+### create a controller: HomeController.java
+```java
+package com.example.mdbspringboot.controllers;
+
+import com.alibaba.boot.velocity.annotation.VelocityLayout;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+@Controller
+@RequestMapping("/home")
+@VelocityLayout("/layouts/layout-1.vm") // Default layout page URL
+public class HomeController {
+
+    // http://localhost:8102/mdb-spring-boot/home/view-1
+    @RequestMapping(method = RequestMethod.GET, value = { "/", "/view-1" })
+    public String method_1() {
+        return "home/view-1";
+    }
+}
+```
+
+### modify method_1() in HomeController.java so that we can use a Model object for passing attributes to a view
+```java
+// http://localhost:8102/mdb-spring-boot/home/view-1
+@RequestMapping(method = RequestMethod.GET, value = { "/", "/view-1" })
+public String method_1(Model model) {
+    model.addAttribute("pageTitle", "VIEW 1");
+    return "home/view-1";
+}
+```
+
+### modify view-1.vm file so that we use a model attribute sent by the HomeController
+#### replace this
+```
+<h1>VIEW 1</h1>
+```
+### with this
+```
+<h1>$!pageTitle</h1>
+```
+
+### let's display an info about layout that we use:
+#### application.properties: add this to velocity configuration
+```
+spring.velocity.layout-key=layout_key
+```
+#### layout-1.vm: 
+```
+<body>
+    <div>
+        <div>$!layout_key</div>
+```
+
+### create CustomErrorController
+```java
+package com.example.mdbspringboot.controllers;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.boot.web.servlet.error.ErrorController;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class CustomErrorController implements ErrorController {
+
+    @RequestMapping("/error")
+    @ResponseBody
+    String error(HttpServletRequest request) {
+        Integer status = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        Exception exception = (Exception) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+
+        String message = exception == null ? "" : exception.getMessage();
+
+        return "<div>" + HttpStatus.valueOf(status) + "</div>" + "<div>" + message + "</div>";
+    }
+}
+```
+
+

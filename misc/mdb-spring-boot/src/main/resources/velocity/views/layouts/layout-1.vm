@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <style>
+            body {
+                background-color: LightSkyBlue;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div>$!layout_key</div>
+
+            <div>
+                #parse("/fragments/header.vm")
+            </div>
+
+            <!-- see application.properties -->
+            $body_content
+
+            <div>
+                #parse("/fragments/footer.vm")
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,10 @@
+<style>
+    .header-container {
+        background: #63B175;
+        padding: 5px;
+    }
+</style>
+
+<div class="header-container">
+    <h1>HEADER</h1>
+</div>
