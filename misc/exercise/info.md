@@ -1,43 +1,4 @@
-
-
-
- mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --file=C:\Users\mmiskovic\Downloads\employees.json --jsonArray
-
-
-
- docker
-
-nvm use 14
-
-
-$ touch docker-compose.yml
-$ docker-compose -f docker-compose.yml up
-
-	Creating network "mongodb_network" with the default driver
-	Creating volume "tut1_data" with default driver
-	Creating mongodb       ... done
-	Creating mongo-express ... done
-
-$ docker-compose down
-
-($ docker-compose stop / $ docker-compose start)
-
-$ docker-compose up -d
-
-# Mongo Express:
-http://localhost:8081/
-
-
-# importing:
-$ mongoimport --host=localhost:27017 --username=rootuser --password=rootpass --authenticationDatabase admin --db=bookdb --collection=books --drop --file=books.json
-
-
-# Mongo Shell
-$ docker ps
-$ docker exec -it {mongo container id} bash
-root@5aac69feef04:/# mongo mongodb://localhost:27017 -u rootuser -p rootpass
-(ctrl+l => clear the screen)
-> show dbs;
+# mongodb
 
 # data types
 # bson
