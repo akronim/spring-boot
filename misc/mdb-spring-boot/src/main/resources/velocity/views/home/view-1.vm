@@ -1,12 +1,5 @@
-<style>
-    .view-1-container {
-        background-color: crimson;
-        color: white;
-        padding: 5px;
-        margin: 5px auto;
-    }
-</style>
-
 <div class="view-1-container">
     <h1>$!pageTitle</h1>
+    <div>$request.getRequestURI()</div>
+    <button onclick="javascript:messageModule.notify('Lorem Ipsum Dolor Sit Amet!')">Notify</button>
 </div>

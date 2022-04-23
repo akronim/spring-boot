@@ -1,0 +1,4 @@
+<div class="view-3-container">
+    <h1>VIEW 3</h1>
+    <div>$request.getRequestURI()</div>
+</div>

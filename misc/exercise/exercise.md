@@ -1597,7 +1597,7 @@ docker ps
 ### stop the containers: ctrl C
 ### remove everything
 ```
-docker-compose down
+docker-compose -f docker-compose.yml down
 ```
 ### create and run docker containers - detached mode
 ```
@@ -1608,8 +1608,8 @@ http://localhost:8081/
 
 ### start - stop the containers without removing them
 ```
-docker-compose stop
-docker-compose start
+docker-compose -f docker-compose.yml stop
+docker-compose -f docker-compose.yml start
 ```
 ### using terminal - mongo shell
 #### list running containers and check the CONTAINER ID for IMAGE: mongo, NAMES: mongodb
@@ -1705,10 +1705,46 @@ spring.velocity.screen-content-key=body_content
         background: #63B175;
         padding: 5px;
     }
+
+    .menu {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: SteelBlue;
+    }
+
+    .menu li {
+        float: left;
+    }
+
+    .menu li a {
+        display: block;
+        color: white;
+        text-align: center;
+        padding: 16px;
+        text-decoration: none;
+    }
+
+    .menu li a:hover {
+        background-color: LightSteelBlue;
+        color: black;
+    }
 </style>
 
 <div class="header-container">
     <h1>HEADER</h1>
+    <ul class="menu">
+        <li>
+            <a href="/mdb-spring-boot/home/">Home</a>
+        </li>
+        <li>
+            <a href="/mdb-spring-boot/home/view-2">View 2</a>
+        </li>
+        <li>
+            <a href="/mdb-spring-boot/home/view-3">View 3</a>
+        </li>
+    </ul>
 </div>
 ```
 
@@ -1725,6 +1761,42 @@ spring.velocity.screen-content-key=body_content
 
 <div class="view-1-container">
     <h1>VIEW 1</h1>
+    <div>$request.getRequestURI()</div>
+</div>
+```
+
+### create a file: \velocity\views\home\view-2.vm
+```
+<style>
+    .view-2-container {
+        background-color: DarkSlateGray;
+        color: white;
+        padding: 5px;
+        margin: 5px auto;
+    }
+</style>
+
+<div class="view-2-container">
+    <h1>VIEW 2</h1>
+    <div>$request.getRequestURI()</div>
+</div> 
+```
+
+
+### create a file: \velocity\views\home\view-3.vm
+```
+<style>
+    .view-3-container {
+        background-color: SlateGray;
+        color: white;
+        padding: 5px;
+        margin: 5px auto;
+    }
+</style>
+
+<div class="view-3-container">
+    <h1>VIEW 3</h1>
+    <div>$request.getRequestURI()</div>
 </div>
 ```
 
@@ -1775,6 +1847,16 @@ public class HomeController {
     public String method_1() {
         return "home/view-1";
     }
+
+	@RequestMapping(method = RequestMethod.GET, value = "/view-2")
+	public String method_2() {
+		return "home/view-2";
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/view-3")
+	public String method_3() {
+		return "home/view-3";
+	}
 }
 ```
 
@@ -1838,5 +1920,135 @@ public class CustomErrorController implements ErrorController {
     }
 }
 ```
+
+
+### create a file: resources/static/styles/styles.css
+#### put in it all styles from:
+- header.vm
+- footer.vm
+- view-1.vm
+- view-2.vm
+- view-3.vm
+```css
+.header-container {
+    background: #63B175;
+    padding: 5px;
+}
+
+.menu {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: SteelBlue;
+}
+
+.menu li {
+    float: left;
+}
+
+.menu li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    background-color: LightSteelBlue;
+    color: black;
+}
+
+.footer-container {
+    background: #63B175;
+    padding: 5px;
+}
+
+.view-1-container {
+    background-color: crimson;
+    color: white;
+    padding: 5px;
+    margin: 5px auto;
+}
+
+.view-2-container {
+    background-color: DarkSlateGray;
+    color: white;
+    padding: 5px;
+    margin: 5px auto;
+}
+
+.view-3-container {
+    background-color: SlateGray;
+    color: white;
+    padding: 5px;
+    margin: 5px auto;
+}
+```
+
+### layout-1.vm - import styles.css file
+```
+<head>
+    <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
+```
+
+
+### create a file: resources/static/scripts/scripts.js
+```js
+var messageModule = (function () {
+    function notify(message) {
+        alert(message);
+    }
+
+    return {
+        notify: notify
+    };
+}());
+```
+
+### layout-1.vm - import scripts.js file
+```
+    <script src="/mdb-spring-boot/scripts/scripts.js"></script>
+</body>
+```
+
+### view-1.vm
+```
+<div class="view-1-container">
+    <h1>$!pageTitle</h1>
+    <div>$request.getRequestURI()</div>
+    <button onclick="javascript:messageModule.notify('Lorem Ipsum Dolor Sit Amet!')">Notify</button>
+</div>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

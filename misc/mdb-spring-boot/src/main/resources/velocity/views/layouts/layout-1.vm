@@ -1,5 +1,6 @@
 <html>
     <head>
+        <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
         <style>
             body {
                 background-color: LightSkyBlue;
@@ -21,5 +22,6 @@
                 #parse("/fragments/footer.vm")
             </div>
         </div>
+        <script src="/mdb-spring-boot/scripts/scripts.js"></script>
     </body>
 </html>

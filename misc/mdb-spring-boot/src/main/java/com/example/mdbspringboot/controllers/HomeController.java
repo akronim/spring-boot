@@ -18,4 +18,14 @@ public class HomeController {
         model.addAttribute("pageTitle", "VIEW 1");
         return "home/view-1";
     }
+
+	@RequestMapping(method = RequestMethod.GET, value = "/view-2")
+	public String method_2() {
+		return "home/view-2";
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/view-3")
+	public String method_3() {
+		return "home/view-3";
+	}
 }

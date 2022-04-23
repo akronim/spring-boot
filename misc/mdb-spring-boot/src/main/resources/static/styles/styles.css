@@ -1,0 +1,55 @@
+.header-container {
+    background: #63B175;
+    padding: 5px;
+}
+
+.menu {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: SteelBlue;
+}
+
+.menu li {
+    float: left;
+}
+
+.menu li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    text-decoration: none;
+}
+
+.menu li a:hover {
+    background-color: LightSteelBlue;
+    color: black;
+}
+
+.footer-container {
+    background: #63B175;
+    padding: 5px;
+}
+
+.view-1-container {
+    background-color: crimson;
+    color: white;
+    padding: 5px;
+    margin: 5px auto;
+}
+
+.view-2-container {
+    background-color: DarkSlateGray;
+    color: white;
+    padding: 5px;
+    margin: 5px auto;
+}
+
+.view-3-container {
+    background-color: SlateGray;
+    color: white;
+    padding: 5px;
+    margin: 5px auto;
+}
