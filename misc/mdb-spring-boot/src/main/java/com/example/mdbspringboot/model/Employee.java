@@ -20,7 +20,7 @@ public class Employee {
     // @Indexed(unique = true) => will ensure that email is unique
     // to enable index, in application.properties we put:
     // spring.data.mongodb.auto-index-creation=true
-    @Indexed(unique = true) 
+    @Indexed(unique = true)
     private String email;
     private String gender;
     private String department;
@@ -28,9 +28,10 @@ public class Employee {
     private Double salary;
     @DateTimeFormat(pattern = "dd-MM-yyyy")
     private LocalDateTime createdAt = LocalDateTime.now();
+    private String mobile;
 
-    public Employee(String firstName, String lastName, String email, String gender, String department, 
-            List<String> projects, Double salary) {
+    public Employee(String firstName, String lastName, String email, String gender, String department,
+            List<String> projects, Double salary, String mobile) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -38,5 +39,6 @@ public class Employee {
         this.department = department;
         this.projects = projects;
         this.salary = salary;
+        this.mobile = mobile;
     }
 }

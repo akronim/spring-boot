@@ -23,7 +23,7 @@ public class MdbSpringBootApplication implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 		String email = "john@smith.com";
 		Employee employee = new Employee("John", "Smith", email, "Male", "Finance",
-				List.of("Project 3", "Project 5", "Project 6"), 5500.0);
+				List.of("Project 3", "Project 5", "Project 6"), 5500.0, "123 345 6789");
 		employeeRepository.findEmployeeByEmail(email).ifPresentOrElse(s -> {
 			System.out.println("\n>>>>>> " + s + " already exists");
 		}, () -> {

@@ -23,6 +23,7 @@
     - Spring Web
     - Spring Data MongoDB
     - Lombok
+    - Validation
 
 - click on the Generate button
 - once the ZIP file is downloaded, unzip the project 
@@ -52,6 +53,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 		</dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -642,7 +649,7 @@ public class Employee {
     // @Indexed(unique = true) => will ensure that email is unique
     // to enable index, in application.properties we put:
     // spring.data.mongodb.auto-index-creation=true
-    @Indexed(unique = true) 
+    @Indexed(unique = true)
     private String email;
     private String gender;
     private String department;
@@ -650,9 +657,10 @@ public class Employee {
     private Double salary;
     @DateTimeFormat(pattern = "dd-MM-yyyy")
     private LocalDateTime createdAt = LocalDateTime.now();
+    private String mobile;
 
-    public Employee(String firstName, String lastName, String email, String gender, String department, 
-            List<String> projects, Double salary) {
+    public Employee(String firstName, String lastName, String email, String gender, String department,
+            List<String> projects, Double salary, String mobile) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -660,7 +668,47 @@ public class Employee {
         this.department = department;
         this.projects = projects;
         this.salary = salary;
+        this.mobile = mobile;
     }
+}
+```
+
+### create a package called com.example.mdbspringboot.dto
+### create a file: dto/EmployeeDTO.java
+```java
+package com.example.mdbspringboot.dto;
+
+import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.validation.constraints.*;
+
+@Data
+@AllArgsConstructor(staticName = "build")
+@NoArgsConstructor
+public class EmployeeDTO {
+    @NotBlank(message = "first name shouldn't be blank")
+    private String firstName;
+    @NotBlank(message = "last name shouldn't be blank")
+    private String lastName;
+    @Email(message = "invalid email address")
+    @NotBlank(message = "email shouldn't be blank")
+    private String email;
+    private String gender;
+    @NotBlank
+    private String department;
+    @NotEmpty
+    private List<String> projects;
+    @Min(2500)
+    @Max(8000)
+    @NotNull(message = "salary shouldn't be null")
+    private Double salary;
+    @NotBlank(message = "mobile shouldn't be blank")
+    @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$", message = "invalid mobile number entered ")
+    private String mobile;
 }
 ```
 
@@ -711,20 +759,47 @@ spring.jackson.default-property-inclusion=non-null
 
 ### create a package called com.example.mdbspringboot.services
 
-### create a service
+### create an interface: EmployeeService
+```java
+package com.example.mdbspringboot.services;
+
+import java.util.List;
+
+import com.example.mdbspringboot.dto.EmployeeDTO;
+import com.example.mdbspringboot.model.Employee;
+
+public interface EmployeeService {
+    List<Employee> getAllEmployees();
+
+    Employee findOne(String employeeId);
+
+    Employee addEmployee(EmployeeDTO employee);
+
+    List<Employee> addEmployees(List<Employee> employees);
+
+    Employee update(Employee employee);
+
+    Employee patch(Employee employeeUpdateRequest);
+
+    void delete(String id);
+}
+```
+
+### create the service implementation
 ```java
 package com.example.mdbspringboot.services;
 
 import java.util.List;
 import java.util.Optional;
 
+import com.example.mdbspringboot.dto.EmployeeDTO;
 import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.repository.EmployeeRepository;
 
 import org.springframework.stereotype.Service;
 
 @Service
-public class EmployeeService {
+public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
 
     public EmployeeService(EmployeeRepository employeeRepository) {
@@ -739,7 +814,18 @@ public class EmployeeService {
         return employeeRepository.findById(employeeId).orElse(null);
     }
 
-    public Employee addEmployee(Employee employee) {
+    public Employee addEmployee(EmployeeDTO employeeRequest) {
+
+        Employee employee = new Employee(
+                employeeRequest.getFirstName(),
+                employeeRequest.getLastName(),
+                employeeRequest.getEmail(),
+                employeeRequest.getGender(),
+                employeeRequest.getDepartment(),
+                employeeRequest.getProjects(),
+                employeeRequest.getSalary(),
+                employeeRequest.getMobile());
+
         return employeeRepository.insert(employee);
     }
 
@@ -800,13 +886,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import javax.validation.Valid;
 import javax.websocket.server.PathParam;
 
+import com.example.mdbspringboot.dto.EmployeeDTO;
 import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.services.EmployeeService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("api/v1/employees")
@@ -831,10 +922,11 @@ public class EmployeeController {
         return employeeService.findOne(employeeId);
     }
 
+    // validation example
     @PostMapping("/create")
-    public Employee addEmployee(@RequestBody Employee employee) {
+    public ResponseEntity<Employee> addEmployee(@RequestBody @Valid EmployeeDTO employee) {
         LOG.info("\n>>>>> Saving employee.\n");
-        return employeeService.addEmployee(employee);
+        return new ResponseEntity<>(employeeService.addEmployee(employee), HttpStatus.CREATED);
     }
 
     @PostMapping("/create-multiple")
@@ -995,11 +1087,11 @@ DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=625c6
 ```
 
 
-### refactoring EmployeeService DI
+### refactoring EmployeeServiceImpl DI
 #### replace this
 ```java
 @Service
-public class EmployeeService {
+public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
 
     public EmployeeService(EmployeeRepository employeeRepository) {
@@ -1016,7 +1108,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class EmployeeService {
+public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
 
     // the rest skipped for brevity
@@ -1059,14 +1151,14 @@ public class EmployeeController {
 }
 ```
 
-### refactoring EmployeeService DI - another way
+### refactoring EmployeeServiceImpl DI - another way
 #### replace this
 ```java
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class EmployeeService {
+public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
 
     // the rest skipped for brevity
@@ -1078,7 +1170,7 @@ public class EmployeeService {
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
-public class EmployeeService {
+public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     EmployeeRepository employeeRepository;
@@ -1087,8 +1179,6 @@ public class EmployeeService {
 
 }
 ```
-
-
 
 ### refactoring EmployeeController DI - another way
 #### replace this
@@ -1125,6 +1215,15 @@ public class EmployeeController {
 ```
 
 ### EmployeeService - get paged data
+```java
+import java.util.Map;
+
+// ...
+
+Map<String, Object> getAllPaged(int pageNo, int pageSize, String[] fields, String sortBy);
+```
+
+### EmployeeServiceImpl - get paged data
 ```java
 import java.util.Map;
 import java.util.HashMap;
@@ -1197,7 +1296,26 @@ List<Employee> getAllBySalaryGTE(int salary);
 
 ### EmployeeService
 ```java
+Map<String, Object> getByProjects(String[] projects);
+
+// query by Example Executor
+List<Employee> getAllByExample(Employee employee);
+
+// query by method names
+List<Employee> getAllByFirstNameStartingWith(String firstName);
+
+// query by method names
+List<Employee> getAllByDepartment(String department);
+
+// using @Query
+List<Employee> getAllBySalaryGTE(int salary);
+```
+
+### EmployeeServiceImpl
+```java
 import org.springframework.data.domain.Example;
+
+// ...
 
 public Map<String, Object> getByProjects(String[] projects) {
     Map<String, Object> response = new HashMap<String, Object>();
@@ -1318,9 +1436,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -1346,7 +1466,24 @@ public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
 public interface EmployeeRepository extends MongoRepository<Employee, String>, CustomEmployeeRepository
 ```
 
-### create another custom repository - CustomEmployeeRepositoryTwo
+### create another interface: CustomEmployeeRepositoryTwo
+```java
+package com.example.mdbspringboot.repository;
+
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+
+public interface CustomEmployeeRepositoryTwo {
+    List<Employee> findAll();
+
+    void saveAll(final List<Employee> employees);
+
+    Employee findById(final String employeeId);
+}
+```
+
+### create the interface implementation: CustomEmployeeRepositoryTwoImpl
 ```java
 package com.example.mdbspringboot.repository;
 
@@ -1362,7 +1499,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Criteria;
 
 @Repository
-public class CustomEmployeeRepositoryTwo {
+public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepositoryTwo {
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -1384,6 +1521,15 @@ public class CustomEmployeeRepositoryTwo {
 ```
 
 ### EmployeeService
+```java
+// here we are using our custom repository
+void testMethod(String employeeId, Employee employee);
+
+// here we are using MongoTemplate based repository
+Employee findById(String id);
+```
+
+### EmployeeServiceImpl
 #### importing CustomEmployeeRepositoryTwo
 ```java
 import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
@@ -1469,7 +1615,7 @@ CommandLineRunner runner(EmployeeRepository repository, MongoTemplate mongoTempl
 	return args -> {
 		String email = "john@smith.com";
 		Employee employee = new Employee("John", "Smith", email, "Male", "Finance",
-				List.of("Project 3", "Project 5", "Project 6"), 5500.0);
+				List.of("Project 3", "Project 5", "Project 6"), 5500.0, "123 345 6789");
 		repository.findEmployeeByEmail(email).ifPresentOrElse(s -> {
 			System.out.println("\n>>>>>> " + s + " already exists");
 		}, () -> {
@@ -1507,7 +1653,7 @@ public class MdbSpringBootApplication implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 		String email = "john@smith.com";
 		Employee employee = new Employee("John", "Smith", email, "Male", "Finance",
-				List.of("Project 3", "Project 5", "Project 6"), 5500.0);
+				List.of("Project 3", "Project 5", "Project 6"), 5500.0, "123 345 6789");
 		employeeRepository.findEmployeeByEmail(email).ifPresentOrElse(s -> {
 			System.out.println("\n>>>>>> " + s + " already exists");
 		}, () -> {
@@ -2208,46 +2354,88 @@ public String method_2(Model model) {
 ```java
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import com.example.mdbspringboot.dto.EmployeeDTO;
+
+import javax.validation.Valid;
+
+import org.springframework.validation.BindingResult;
+
 // ...
 
+// validation example
 @RequestMapping(value = "/save_employee", method = RequestMethod.POST)
-public String addEmployee(@ModelAttribute("employee") Employee employee) {
-	employeeService.addEmployee(employee);
-	
+public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
+	if (!bindingResult.hasErrors()) {
+		employeeService.addEmployee(employee);
+	}
 	return "redirect:/home/view-2";
 }
+```
+
+
+### macros.vm: add new macro
+```
+#macro(renderValidationErrors $erros)
+    #if($!erros && $erros.size() != 0)
+        #foreach($error in $erros)
+            <div style="color:red">
+                <div style="float:left; margin-right:10px">$error.getField()</div>
+                <div>$error.getDefaultMessage()</div>
+            </div>
+        #end
+    #end
+#end
 ```
 
 
 ### view-2.vm: add the form to the view-2-container
 ```
 <form class="employee-form" method="post" action="/mdb-spring-boot/home/save_employee">
+
     <div>
         <label for="firstname">First name:</label>
         <input type="text" id="firstname" name="firstName">
     </div>
+
     <div>
         <label for="lastname">Last name:</label>
         <input type="text" id="lastname" name="lastName">
     </div>
-    <div>
-        <label for="gender">Gender:</label>
-        <input type="text" id="gender" name="gender">
-    </div>
+
     <div>
         <label for="email">Email:</label>
         <input type="text" id="email" name="email">
     </div>
+
+    <div>
+        <label for="gender">Gender:</label>
+        <input type="text" id="gender" name="gender">
+    </div>
+
     <div>
         <label for="department">Department:</label>
-        <input type="department" id="department" name="department">
+        <input type="text" id="department" name="department">
     </div>
+
+    <div>
+        <label for="projects">Projects:</label>
+        <input type="text" id="projects" name="projects">
+    </div>
+
     <div>
         <label for="salary">Salary:</label>
         <input type="text" id="salary" name="salary">
     </div>
+
+    <div>
+        <label for="mobile">Mobile:</label>
+        <input type="text" id="mobile" name="mobile">
+    </div>
+
     <button type="submit">Add</button>
 </form>
+#renderValidationErrors($validationErros)
+
 ```
 
 ### add new styles to: resources/static/styles/styles.css

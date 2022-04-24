@@ -3,7 +3,10 @@ package com.example.mdbspringboot.controllers;
 import java.util.List;
 import java.util.Locale;
 
+import javax.validation.Valid;
+
 import com.alibaba.boot.velocity.annotation.VelocityLayout;
+import com.example.mdbspringboot.dto.EmployeeDTO;
 import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.services.EmployeeService;
 
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -50,9 +54,11 @@ public class HomeController {
 	}
 
 	@RequestMapping(value = "/save_employee", method = RequestMethod.POST)
-	public String addEmployee(@ModelAttribute("employee") Employee employee) {
+	public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
 
-		employeeService.addEmployee(employee);
+		if (!bindingResult.hasErrors()) {
+			employeeService.addEmployee(employee);
+		}
 
 		return "redirect:/home/view-2";
 	}

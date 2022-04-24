@@ -39,18 +39,23 @@
         </div>
 
         <div>
-            <label for="gender">Gender:</label>
-            <input type="text" id="gender" name="gender">
-        </div>
-
-        <div>
             <label for="email">Email:</label>
             <input type="text" id="email" name="email">
         </div>
 
         <div>
+            <label for="gender">Gender:</label>
+            <input type="text" id="gender" name="gender">
+        </div>
+
+        <div>
             <label for="department">Department:</label>
-            <input type="department" id="department" name="department">
+            <input type="text" id="department" name="department">
+        </div>
+
+        <div>
+            <label for="projects">Projects:</label>
+            <input type="text" id="projects" name="projects">
         </div>
 
         <div>
@@ -58,6 +63,12 @@
             <input type="text" id="salary" name="salary">
         </div>
 
+        <div>
+            <label for="mobile">Mobile:</label>
+            <input type="text" id="mobile" name="mobile">
+        </div>
+
         <button type="submit">Add</button>
     </form>
+    #renderValidationErrors($validationErros)
 </div>
