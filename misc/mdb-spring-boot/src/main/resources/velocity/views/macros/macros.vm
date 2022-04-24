@@ -1,0 +1,17 @@
+#macro(renderAlertMessage $message)
+
+<div id="alert-div" class="alert alert-message-container closed">
+    <div id="alert-msg" class="alert-item"></div>
+    <div class="alert-item alert-item-close">
+        &times;
+    </div>
+</div>
+
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function (event) {
+        // note: "$!message"
+        messageModule.init("$!message");
+    });
+</script>
+#end
+

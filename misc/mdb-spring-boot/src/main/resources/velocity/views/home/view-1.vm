@@ -1,5 +1,6 @@
 <div class="view-1-container">
+    #renderAlertMessage()
     <h1>$!pageTitle</h1>
     <div>$request.getRequestURI()</div>
-    <button onclick="javascript:messageModule.notify('Lorem Ipsum Dolor Sit Amet!')">Notify</button>
+    <button onclick="javascript:messageModule.init('Lorem Ipsum Dolor Sit Amet!')">Show message</button>
 </div>

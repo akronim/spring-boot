@@ -1660,6 +1660,7 @@ spring.data.mongodb.host=localhost
 ## velocity
 ### pom.xml: add this dependency
 ```xml
+<!-- Velocity dependencies -->
 <dependency>
     <groupId>com.alibaba.boot</groupId>
     <artifactId>velocity-spring-boot-starter</artifactId>
@@ -1807,6 +1808,7 @@ spring.velocity.screen-content-key=body_content
         <style>
             body {
                 background-color: LightSkyBlue;
+                font-family: "Arial";
             }
         </style>
     </head>
@@ -1837,10 +1839,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Controller
 @RequestMapping("/home")
-@VelocityLayout("/layouts/layout-1.vm") // Default layout page URL
+@VelocityLayout("/layouts/layout-1.vm") // default layout page URL for this controller
 public class HomeController {
+
+    private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
     // http://localhost:8102/mdb-spring-boot/home/view-1
     @RequestMapping(method = RequestMethod.GET, value = { "/", "/view-1" })
@@ -1862,6 +1869,10 @@ public class HomeController {
 
 ### modify method_1() in HomeController.java so that we can use a Model object for passing attributes to a view
 ```java
+import org.springframework.ui.Model;
+
+// ...
+
 // http://localhost:8102/mdb-spring-boot/home/view-1
 @RequestMapping(method = RequestMethod.GET, value = { "/", "/view-1" })
 public String method_1(Model model) {
@@ -1993,16 +2004,86 @@ public class CustomErrorController implements ErrorController {
     <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
 ```
 
+### create a file: resources/velocity/views/macros/macros.vm
+```
+#macro(renderAlertMessage $message)
+
+<div id="alert-div" class="alert alert-message-container closed">
+    <div id="alert-msg" class="alert-item"></div>
+    <div class="alert-item alert-item-close">
+        &times;
+    </div>
+</div>
+
+#end
+```
+
+### add new styles to: resources/static/styles/styles.css
+```css
+.alert-message-container {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    border-radius: 4px;
+    background-color: DodgerBlue;
+    color: white;
+    padding: 0 10px;
+}
+
+.alert-message-container .alert-item {
+    font-size: 15px;
+}
+
+.alert-message-container .alert-item.alert-item-close {
+    cursor: pointer;
+}
+
+.alert-message-container.closed {
+    display: none;
+}
+```
 
 ### create a file: resources/static/scripts/scripts.js
 ```js
 var messageModule = (function () {
-    function notify(message) {
-        alert(message);
+    var alertDiv = document.getElementById("alert-div");
+    var messageElement = document.getElementById('alert-msg');
+    var closeBtn = document.querySelector(".alert-item-close");
+
+    function addEventListeners() {
+        closeBtn.addEventListener("click", function () {
+            resetAlertMessage();
+        })
+    }
+
+    function resetAlertMessage() {
+        alertDiv
+            .classList
+            .add("closed");
+
+        messageElement.innerHTML = "";
+    }
+
+    function setMessage(message) {
+        messageElement.innerHTML = message;
+    }
+
+    function setShowHideClass() {
+        alertDiv.classList.remove("closed");
+    }
+
+    function init(message) {
+        if (alertDiv && message) {
+            setMessage(message);
+            addEventListeners();
+            setShowHideClass();
+        }
     }
 
     return {
-        notify: notify
+        init: init
     };
 }());
 ```
@@ -2013,21 +2094,365 @@ var messageModule = (function () {
 </body>
 ```
 
+### macros.vm: add a script section to the renderAlertMessage macro
+```
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function (event) {
+        // note: "$!message"
+        messageModule.init("$!message");
+    });
+</script>
+#end
+```
+
 ### view-1.vm
 ```
 <div class="view-1-container">
+    #renderAlertMessage()
     <h1>$!pageTitle</h1>
     <div>$request.getRequestURI()</div>
-    <button onclick="javascript:messageModule.notify('Lorem Ipsum Dolor Sit Amet!')">Notify</button>
+    <button onclick="javascript:messageModule.init('Lorem Ipsum Dolor Sit Amet!')">Show message</button>
 </div>
 ```
 
+### view-2.vm
+```
+<div class="view-2-container">
+    #renderAlertMessage("View 2 - a special message")
+    <h1>VIEW 2</h1>
+    <div>$request.getRequestURI()</div>
+</div>
+```
+
+### view-3.vm
+```
+<div class="view-3-container">
+    <h1>VIEW 3</h1>
+    <div>$request.getRequestURI()</div>
+
+    ## Quiet reference notation
+    #set ($test = $null)
+    <div>$test</div>
+    <div>$!test</div>
+    <script type="text/javascript">
+        console.log("$test");
+        console.log("$!test");
+    </script>
+
+    ## Formal notation - with curly braces
+    #set ($fruit = "apple")
+    <div>$fruit-juice</div>
+    <div>${fruit}-juice</div>
+
+    ## Booelan
+    #set ($ok = false)
+    #if($ok)
+        <div>"OK"</div>
+    #elseif(!$ok)
+        <div>"NOK"</div>
+    #end
+</div>
+```
+
+### HomeController.java
+```java
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.services.EmployeeService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+// ...
+
+@Autowired
+EmployeeService employeeService;
+
+// ...
+
+@RequestMapping(method = RequestMethod.GET, value = "/view-2")
+public String method_2(Model model) {
+	List<Employee> employees = employeeService.getAllByFirstNameStartingWith("Al");
+	model.addAttribute("employees", employees);
+	return "home/view-2";
+}
+```
+
+### view-2.vm: add this to the view-2-container
+```
+<table>
+    <tr>
+        <th>No</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Gender</th>
+        <th>Email</th>
+        <th>Department</th>
+        <th>Salary</th>
+    </tr>
+    #foreach($x in $employees)
+        <tr>
+            <td>$foreach.count</td>
+            <td>$x.firstName</td>
+            <td>$x.lastName</td>
+            <td>$x.gender</td>
+            <td>$x.email</td>
+            <td>$x.department</td>
+            <td>$x.salary</td>
+        </tr>
+    #end
+</table>
+```
+
+### HomeController.java: new employee
+```java
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+// ...
+
+@RequestMapping(value = "/save_employee", method = RequestMethod.POST)
+public String addEmployee(@ModelAttribute("employee") Employee employee) {
+	employeeService.addEmployee(employee);
+	
+	return "redirect:/home/view-2";
+}
+```
 
 
+### view-2.vm: add the form to the view-2-container
+```
+<form class="employee-form" method="post" action="/mdb-spring-boot/home/save_employee">
+    <div>
+        <label for="firstname">First name:</label>
+        <input type="text" id="firstname" name="firstName">
+    </div>
+    <div>
+        <label for="lastname">Last name:</label>
+        <input type="text" id="lastname" name="lastName">
+    </div>
+    <div>
+        <label for="gender">Gender:</label>
+        <input type="text" id="gender" name="gender">
+    </div>
+    <div>
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email">
+    </div>
+    <div>
+        <label for="department">Department:</label>
+        <input type="department" id="department" name="department">
+    </div>
+    <div>
+        <label for="salary">Salary:</label>
+        <input type="text" id="salary" name="salary">
+    </div>
+    <button type="submit">Add</button>
+</form>
+```
+
+### add new styles to: resources/static/styles/styles.css
+```css
+.employees-table,
+.employees-table td,
+.employees-table th {
+    border: 1px solid;
+}
+
+.employee-form {
+    width: 300px;
+}
+
+.employee-form div {
+    display: flex;
+    justify-content: space-between;
+}
+```
+
+### application.properties
+```
+# we read this from within method_3 of HomeController
+view-3-message=Hello there
+```
+
+### ### HomeController.java: modify method_3 so that it returns ModelAndView
+```java
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Locale;
+
+// ...
+
+// we insert the view-3-message property from the application.properties file 
+// into the message attribute
+@Value("${view-3-message}")
+private String message;
+
+// ...
+
+@RequestMapping(method = RequestMethod.GET, value = "/view-3")
+public ModelAndView method_3(Locale locale) {
+	var mav = new ModelAndView("home/view-3");
+	mav.addObject("message", message);
+
+    logger.info("\n>>>>>> Welcome home! The client locale is {}.", locale);
+
+	return mav;
+}
+```
+
+### view-3.vm: add this to the view-3-container
+```
+<div>$message</div>
+```
+
+### ### HomeController.java: add this
+```java
+// see: footer.vm
+@ModelAttribute("WikipediaLinkLabel")
+public String wikipediaLinkLabel() {
+	return "Wikipedia";
+}
+
+// see: footer.vm
+@ModelAttribute("WikipediaLink")
+public String wikipediaLink() {
+	return "https://en.wikipedia.org/wiki/Java_(programming_language)";
+}
+```
+
+### footer.vm
+```
+<div class="footer-container">
+    <h1>FOOTER</h1>
+    <a href="$!WikipediaLink" target="_blank">$!WikipediaLinkLabel</a>
+</div>
+```
+
+### HomeController.java: delete wikipediaLinkLabel and wikipediaLink
+```java
+// see: footer.vm
+@ModelAttribute
+public void addAttributes(Model model) {
+    model.addAttribute("WikipediaLinkLabel", "Wikipedia");
+    model.addAttribute("WikipediaLink", "https://en.wikipedia.org/wiki/Java_(programming_language)");
+}
+```
+
+### create a new file: resources/velocity/views/layouts/layout-2.vm
+```
+<html>
+    <head>
+        <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
+        <style>
+            body {
+                background-color: lightgreen;
+                font-family: arial;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div>$!layout_key</div>
+
+            #parse("/fragments/header.vm")
+
+            <!-- see application.properties -->
+            $body_content
+        </div>
+    </body>
+</html>
+```
 
 
+### HomeController.java: add this decorator above method_3
+```java
+@VelocityLayout("/layouts/layout-2.vm") // overrides default layout
+```
 
+### testing
+### pom.xml: add this dependency
+```xml
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>5.7.0</version>
+    <scope>test</scope>
+</dependency>
+```
 
+### src/test/java/com/example/mdbspringboot/MdbSpringBootApplicationTests.java
+```java
+package com.example.mdbspringboot;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class MdbSpringBootApplicationTests {
+
+	// object underTest
+	Calculator calculator = new Calculator();
+
+	@Test
+	void itShouldAddTwoNumbers() {
+		// given
+		int numberOne = 20;
+		int numberTwo = 30;
+
+		// when
+		int result = calculator.add(numberOne, numberTwo);
+
+		// then
+		int expected = 50;
+		assertEquals(expected, result);
+	}
+
+	class Calculator {
+		int add(int a, int b) {
+			return a + b;
+		}
+	}
+}
+```
+
+### src/test/java/com/example/mdbspringboot/controllers/HomeControllerTest.java
+```java
+package com.example.mdbspringboot.controllers;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import org.springframework.test.web.servlet.ResultActions;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+public class HomeControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void testMethod_1() throws Exception {
+        // when
+        ResultActions resultActions = mockMvc.perform(get("/home/view-1").contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions.andExpect(status().isOk())
+                .andExpect(content().string(containsString("<div class=\"view-1-container\">")))
+                .andReturn();
+    }
+}
+```
 
 
 

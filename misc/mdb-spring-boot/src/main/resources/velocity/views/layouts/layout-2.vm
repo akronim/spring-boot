@@ -3,8 +3,8 @@
         <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
         <style>
             body {
-                background-color: LightSkyBlue;
-                font-family: "Arial";
+                background-color: lightgreen;
+                font-family: arial;
             }
         </style>
     </head>
@@ -12,17 +12,10 @@
         <div>
             <div>$!layout_key</div>
 
-            <div>
-                #parse("/fragments/header.vm")
-            </div>
+            #parse("/fragments/header.vm")
 
             <!-- see application.properties -->
             $body_content
-
-            <div>
-                #parse("/fragments/footer.vm")
-            </div>
         </div>
-        <script src="/mdb-spring-boot/scripts/scripts.js"></script>
     </body>
 </html>

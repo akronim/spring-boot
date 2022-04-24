@@ -53,3 +53,42 @@
     padding: 5px;
     margin: 5px auto;
 }
+
+.alert-message-container {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    border-radius: 4px;
+    background-color: DodgerBlue;
+    color: white;
+    padding: 0 10px;
+}
+
+.alert-message-container .alert-item {
+    font-size: 15px;
+}
+
+.alert-message-container .alert-item.alert-item-close {
+    cursor: pointer;
+}
+
+.alert-message-container.closed {
+    display: none;
+}
+
+.employees-table,
+.employees-table td,
+.employees-table th {
+    border: 1px solid;
+}
+
+.employee-form {
+    width: 300px;
+}
+
+.employee-form div {
+    display: flex;
+    justify-content: space-between;
+}
