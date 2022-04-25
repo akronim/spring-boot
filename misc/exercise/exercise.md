@@ -613,17 +613,21 @@ https://docs.mongodb.org/manual/core/introduction/
 
 ### create mongodb database employeesdb (win)
 ```
-mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --file=C:\Users\<user>\Downloads\employees.json --jsonArray
+mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=C:\Users\<user>\Downloads\employees.json --jsonArray
 ```
-### (if we need to authenticate first)
+#### (if we need to authenticate first)
 ```
 mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=C:\Users\<user>\Downloads\employees.json --jsonArray
 ```
 
 ### check if data imported
 ```
-
+mongosh mongodb://localhost:27017/employeesdb
+db.employees.find().count()
 ```
+#### (if we need to authenticate first)
+```mongosh "mongodb://rootuser:rootpass@localhost:27017/employeesdb?authSource=admin"```
+```mongosh "mongodb://localhost:27017/employeesdb" --username rootuser --password rootpass --authenticationDatabase admin```
 
 ### create a package named com.example.mdbspringboot.model and add the class Employee.java
 ```java
