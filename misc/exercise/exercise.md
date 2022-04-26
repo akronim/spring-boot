@@ -746,7 +746,7 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
 # spring.data.mongodb.host=localhost
 
 ### Local MongoDB config - one-liners
-# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?ssl=false
+# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
 spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
 
 spring.data.mongodb.auto-index-creation=true
@@ -989,7 +989,7 @@ GET http://localhost:8102/mdb-spring-boot/api/v1/employees/
 GET http://localhost:8102/mdb-spring-boot/api/v1/employees/625c6a85c131622dc1789587
 
 
-###
+### valid data
 POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
 Content-Type: application/json
 
@@ -1003,7 +1003,22 @@ Content-Type: application/json
     "Project 2",
     "Project 10"
   ],
-  "salary": 5600
+  "salary": 5600,
+  "mobile": "123 345 6789"
+}
+
+### invalid data
+POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "lastName": null,
+  "email": "tomgibson.com",
+  "gender": "Male",
+  "projects": [],
+  "salary": 15600,
+  "mobile": "123*345/6789"
 }
 
 
@@ -1091,6 +1106,96 @@ DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=625c6
 ```
 
 
+### validation exception handling - to return a proper error message
+### create a package called com.example.mdbspringboot.advice
+### create a file: advice\ApplicationExceptionHandler.java
+```java
+package com.example.mdbspringboot.advice;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class ApplicationExceptionHandler {
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    // @ExceptionHandler - used to handle the specific exceptions
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleInvalidArgument(MethodArgumentNotValidException ex) {
+        Map<String, String> errorMap = new HashMap<>();
+
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            errorMap.put(error.getField(), error.getDefaultMessage());
+        });
+
+        // sending the custom responses to the client
+        return errorMap;
+    }
+}
+```
+
+### throw an exception if an employee not found 
+### create a package called com.example.mdbspringboot.exception
+### create a file: exception\EmployeeNotFoundException.java
+```java
+package com.example.mdbspringboot.exception;
+
+public class EmployeeNotFoundException extends Exception {
+    public EmployeeNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+### EmployeeService - change findOne method signature
+```java
+Employee findOne(String employeeId) throws EmployeeNotFoundException;
+```
+#### EmployeeServiceImpl - refactor findOne method
+```java
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+
+// ...
+
+public Employee findOne(String employeeId) throws EmployeeNotFoundException {
+    return employeeRepository.findById(employeeId)
+            .orElseThrow(() -> new EmployeeNotFoundException("employee not found with id : " + employeeId));
+}
+```
+### EmployeeController - getEmployee
+```java
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+
+// ...
+
+@GetMapping("/{employeeId}")
+public ResponseEntity<Employee> getEmployee(@PathVariable String employeeId) throws EmployeeNotFoundException {
+    LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
+
+    return ResponseEntity.ok(employeeService.findOne(employeeId));
+}
+```
+### ApplicationExceptionHandler.java - add EmployeeNotFoundException handler
+```java
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+
+// ...
+
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+@ExceptionHandler(EmployeeNotFoundException.class)
+public Map<String, String> handleBusinessException(EmployeeNotFoundException ex) {
+    Map<String, String> errorMap = new HashMap<>();
+    errorMap.put("errorMessage", ex.getMessage());
+    return errorMap;
+}
+```
+
+
 ### refactoring EmployeeServiceImpl DI
 #### replace this
 ```java
@@ -1154,6 +1259,10 @@ public class EmployeeController {
 
 }
 ```
+
+
+### refactor EmployeeController to use ResponseEntity
+
 
 ### refactoring EmployeeServiceImpl DI - another way
 #### replace this
@@ -1530,7 +1639,7 @@ public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepository
 void testMethod(String employeeId, Employee employee);
 
 // here we are using MongoTemplate based repository
-Employee findById(String id);
+Employee findById(String id) throws EmployeeNotFoundException;
 ```
 
 ### EmployeeServiceImpl
@@ -1551,8 +1660,14 @@ public void testMethod(String employeeId, Employee employee) {
 }
 
 // here we are using MongoTemplate based repository
-public Employee findById(String id) {
-    return customEmployeeRepositoryTwo.findById(id);
+public Employee findById(String id) throws EmployeeNotFoundException {
+    Employee employee = customEmployeeRepositoryTwo.findById(id);
+
+    if (Objects.nonNull(employee)) {
+        return employee;
+    } else {
+        throw new EmployeeNotFoundException("employee not found with id : " + id);
+    }
 }
 ```
 
@@ -1568,12 +1683,13 @@ public void testMethod(@PathVariable final String employeeId, @RequestBody final
 #### modify getEmployee method
 ```java
 @GetMapping("/{employeeId}")
-public Employee getEmployee(@PathVariable String employeeId) {
+public ResponseEntity<Employee> getEmployee(@PathVariable String employeeId) throws EmployeeNotFoundException {
     LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
-    // return employeeService.findOne(employeeId); // delete this
+
+    // return ResponseEntity.ok(employeeService.findOne(employeeId)); // delete this
 
     // here we are using MongoTemplate based repository
-    return employeeService.findById(employeeId);
+    return ResponseEntity.ok(employeeService.findById(employeeId));
 }
 ```
 
@@ -1788,19 +1904,10 @@ docker ps
 ```
 docker exec -i {mongo CONTAINER ID} sh -c 'mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass -c employees -d employeesdb --drop --jsonArray' < /path/mdb-spring-boot/employees.json
 ```
-### finally, modify application.properties 1-13
+### finally, modify application.properties
 ```
-
-### Local MongoDB config
-spring.data.mongodb.authentication-database=admin
-spring.data.mongodb.username=rootuser
-spring.data.mongodb.password=rootpass
-spring.data.mongodb.database=employeesdb
-spring.data.mongodb.port=27017
-spring.data.mongodb.host=localhost
-
 ### Local MongoDB config - one-liners
-# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?ssl=false
+spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
 # spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
 
 
@@ -2462,7 +2569,7 @@ public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employe
 
 ### application.properties
 ```
-# we read this from within method_3 of HomeController
+# we will read this from within method_3 of HomeController
 view-3-message=Hello there
 ```
 

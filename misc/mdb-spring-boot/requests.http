@@ -3,10 +3,10 @@ GET http://localhost:8102/mdb-spring-boot/api/v1/employees/
 
 
 ###
-GET http://localhost:8102/mdb-spring-boot/api/v1/employees/62646a31b80003b970408ea6
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/123
 
 
-###
+### valid data
 POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
 Content-Type: application/json
 
@@ -20,7 +20,22 @@ Content-Type: application/json
     "Project 2",
     "Project 10"
   ],
-  "salary": 5600
+  "salary": 5600,
+  "mobile": "123 345 6789"
+}
+
+### invalid data
+POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "lastName": null,
+  "email": "tomgibson.com",
+  "gender": "Male",
+  "projects": [],
+  "salary": 15600,
+  "mobile": "123*345/6789"
 }
 
 

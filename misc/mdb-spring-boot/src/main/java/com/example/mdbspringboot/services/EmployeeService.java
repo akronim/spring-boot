@@ -4,12 +4,13 @@ import java.util.List;
 import java.util.Map;
 
 import com.example.mdbspringboot.dto.EmployeeDTO;
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
 import com.example.mdbspringboot.model.Employee;
 
 public interface EmployeeService {
     List<Employee> getAllEmployees();
 
-    Employee findOne(String employeeId);
+    Employee findOne(String employeeId) throws EmployeeNotFoundException;
 
     Employee addEmployee(EmployeeDTO employee);
 
@@ -41,5 +42,5 @@ public interface EmployeeService {
     void testMethod(String employeeId, Employee employee);
 
     // here we are using MongoTemplate based repository
-    Employee findById(String id);
+    Employee findById(String id) throws EmployeeNotFoundException;
 }

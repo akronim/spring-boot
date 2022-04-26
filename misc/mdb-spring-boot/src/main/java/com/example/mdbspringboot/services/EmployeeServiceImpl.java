@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.example.mdbspringboot.dto.EmployeeDTO;
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
 import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
 import com.example.mdbspringboot.repository.EmployeeRepository;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.HashMap;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +36,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepository.findAll();
     }
 
-    public Employee findOne(String employeeId) {
-        return employeeRepository.findById(employeeId).orElse(null);
+    public Employee findOne(String employeeId) throws EmployeeNotFoundException {
+        return employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EmployeeNotFoundException("employee not found with id : " + employeeId));
     }
 
     public Employee addEmployee(EmployeeDTO employeeRequest) {
@@ -149,7 +152,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // here we are using MongoTemplate based repository
-    public Employee findById(String id) {
-        return customEmployeeRepositoryTwo.findById(id);
+    public Employee findById(String id) throws EmployeeNotFoundException {
+        Employee employee = customEmployeeRepositoryTwo.findById(id);
+
+        if (Objects.nonNull(employee)) {
+            return employee;
+        } else {
+            throw new EmployeeNotFoundException("employee not found with id : " + id);
+        }
     }
 }

@@ -17,6 +17,7 @@ import javax.validation.Valid;
 import javax.websocket.server.PathParam;
 
 import com.example.mdbspringboot.dto.EmployeeDTO;
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
 import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.services.EmployeeService;
 
@@ -44,11 +45,11 @@ public class EmployeeController {
     }
 
     @GetMapping("/{employeeId}")
-    public Employee getEmployee(@PathVariable String employeeId) {
+    public ResponseEntity<Employee> getEmployee(@PathVariable String employeeId) throws EmployeeNotFoundException {
         LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
 
         // here we are using MongoTemplate based repository
-        return employeeService.findById(employeeId);
+        return ResponseEntity.ok(employeeService.findById(employeeId));
     }
 
     @PostMapping("/create")
