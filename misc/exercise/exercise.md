@@ -914,6 +914,7 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
+    // http://localhost:8102/mdb-spring-boot/api/v1/employees/
     @GetMapping("/")
     public List<Employee> getAllEmployees() {
         LOG.info("\n>>>>> Getting all employees.\n");
@@ -1914,6 +1915,104 @@ spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?
 ```
 ### using docker END
 
+### using swagger
+### adding dependency in pom.xml
+- visit: https://mvnrepository.com/ 
+- search: springfox swagger
+### pom.xml - add swagger.version to the properties
+```xml
+<properties>
+    <java.version>11</java.version>
+    <swagger.version>3.0.0</swagger.version>
+</properties>
+```
+### pom.xml - add the dependency
+```xml
+<dependency>
+	<groupId>io.springfox</groupId>
+	<artifactId>springfox-boot-starter</artifactId>
+	<version>${swagger.version}</version>
+</dependency>
+```
+### create a file mdbspringboot\config\SwaggerConfig.java, enable Swagger
+```java
+package com.example.mdbspringboot.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+@Configuration
+@EnableSwagger2
+public class SwaggerConfig {
+
+    @Bean
+    public Docket swaggerDocket() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .paths(PathSelectors.ant("/mdb-spring-boot/api/v1/employees/*"))
+                .apis(RequestHandlerSelectors.basePackage("com.example.mdbspringboot"))
+                // .paths(PathSelectors.any())
+                // .apis(RequestHandlerSelectors.any())
+                .build()
+                .apiInfo(getApiInfo());
+    }
+
+    private ApiInfo getApiInfo() {
+        return new ApiInfoBuilder()
+                .title("MY API")
+                .description("This is demo for Swagger")
+                .version("1.0.0")
+                .build();
+    }
+}
+```
+
+### application.properties - add this:
+```
+## related to Swagger - change the SpringBoot path matching pattern to AntPathMatcher 
+spring.mvc.pathmatch.matching-strategy=ant_path_matcher
+```
+
+### visit
+- http://localhost:8102/mdb-spring-boot/v2/api-docs
+- http://localhost:8102/mdb-spring-boot/swagger-ui/
+- http://localhost:8102/mdb-spring-boot/swagger-ui/index.html
+
+### EmployeeController.java - add this annotation above the getEmployee method
+```java
+import io.swagger.annotations.ApiOperation;
+
+// ...
+
+@ApiOperation(value = "getEmployee - allowed arguments that this method accepts are: [...]") // Swagger
+```
+
+### EmployeeDTO.java
+```java
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+// ...
+
+// class annotation
+@ApiModel(description = "This is Employee data transfer object and ...") // Swagger
+
+// ...
+
+// email field annotation
+@ApiModelProperty(notes = "email - no duplicates are allowed") // Swagger
+```
+
+### using swagger END
+
 ## velocity
 ### pom.xml: add this dependency
 ```xml
@@ -2667,6 +2766,7 @@ public void addAttributes(Model model) {
 ```java
 @VelocityLayout("/layouts/layout-2.vm") // overrides default layout
 ```
+### velocity END
 
 ### testing
 ### pom.xml: add this dependency

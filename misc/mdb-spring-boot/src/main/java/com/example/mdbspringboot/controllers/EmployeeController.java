@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.annotations.ApiOperation;
+
 import java.util.List;
 
 import javax.validation.Valid;
@@ -38,13 +40,15 @@ public class EmployeeController {
     @Autowired
     EmployeeService employeeService;
 
+    // http://localhost:8102/mdb-spring-boot/api/v1/employees/
     @GetMapping("/")
     public List<Employee> getAllEmployees() {
         LOG.info("\n>>>>> Getting all employees.\n");
         return employeeService.getAllEmployees();
     }
-
+    
     @GetMapping("/{employeeId}")
+    @ApiOperation(value = "getEmployee - allowed arguments that this method accepts are: [...]") // Swagger
     public ResponseEntity<Employee> getEmployee(@PathVariable String employeeId) throws EmployeeNotFoundException {
         LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
 

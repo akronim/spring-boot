@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.*;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
+@ApiModel(description = "This is Employee data transfer object and ...") // Swagger
 @Data
 @AllArgsConstructor(staticName = "build")
 @NoArgsConstructor
@@ -16,6 +20,7 @@ public class EmployeeDTO {
     private String firstName;
     @NotBlank(message = "last name shouldn't be blank")
     private String lastName;
+    @ApiModelProperty(notes = "email - no duplicates are allowed") // Swagger
     @Email(message = "invalid email address")
     @NotBlank(message = "email shouldn't be blank")
     private String email;
