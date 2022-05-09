@@ -692,7 +692,7 @@ import javax.validation.constraints.*;
 
 @Data
 @AllArgsConstructor(staticName = "build")
-@NoArgsConstructor
+@NoArgsConstructor // empty => default
 public class EmployeeDTO {
     @NotBlank(message = "first name shouldn't be blank")
     private String firstName;
@@ -929,6 +929,8 @@ public class EmployeeController {
 
     // validation example
     @PostMapping("/create")
+    // ResponseEntity - to configure the whole HTTP response: status code, headers, and body
+    // RequestBody - maps the HttpRequest body to a transfer or domain object (automatic deserialization)
     public ResponseEntity<Employee> addEmployee(@RequestBody @Valid EmployeeDTO employee) {
         LOG.info("\n>>>>> Saving employee.\n");
         return new ResponseEntity<>(employeeService.addEmployee(employee), HttpStatus.CREATED);
@@ -2276,7 +2278,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class CustomErrorController implements ErrorController {
 
     @RequestMapping("/error")
-    @ResponseBody
+    @ResponseBody // it binds a method return value to the web response body, it is not interpreted as a view name
     String error(HttpServletRequest request) {
         Integer status = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         Exception exception = (Exception) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
@@ -2519,6 +2521,8 @@ import com.example.mdbspringboot.services.EmployeeService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.web.bind.annotation.GetMapping;
+
 // ...
 
 @Autowired
@@ -2526,7 +2530,8 @@ EmployeeService employeeService;
 
 // ...
 
-@RequestMapping(method = RequestMethod.GET, value = "/view-2")
+// @RequestMapping(method = RequestMethod.GET, value = "/view-2")
+@GetMapping("/view-2") // another syntax
 public String method_2(Model model) {
 	List<Employee> employees = employeeService.getAllByFirstNameStartingWith("Al");
 	model.addAttribute("employees", employees);
@@ -2853,8 +2858,91 @@ public class HomeControllerTest {
 }
 ```
 
+### Employee.java
+- add @Builder, @NoArgsConstructor and @AllArgsConstructor annotations to the Employee class
+- add @Builder.Default to the createdAt field
+```java
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
+@Builder // now we can create Employee instances using builder API
+@NoArgsConstructor
+@AllArgsConstructor
+public class Employee {
+    // ...
+    @DateTimeFormat(pattern = "dd-MM-yyyy")
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+    // ...
+}
+```
 
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.repository.EmployeeRepository;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+@SpringBootTest
+class EmployeeServiceTest {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @MockBean
+    private EmployeeRepository employeeRepository;
+
+    @BeforeEach
+    void setUp() {
+        // we will mock EmployeeRepository
+
+        Employee employee1 = Employee.builder()
+                .firstName("Alex")
+                .lastName("Moore")
+                .email("alex@moore.com")
+                .gender("Male")
+                .department("IT")
+                .projects(List.of("Project 3", "Project 5", "Project 6"))
+                .salary(6350.0)
+                .mobile("123 345 6789")
+                .build();
+
+        String firstName = "Al";
+        Mockito.when(employeeRepository.findByFirstNameStartingWith(firstName))
+                .thenReturn(List.of(employee1));
+
+    }
+
+    @DisplayName("getAllByFirstNameStartingWith | GIVEN ... " +
+            "SHOULD ...")
+    @Test
+    void getAllByFirstNameStartingWith_x1() {
+        String firstName = "Al";
+
+        List<Employee> employees = employeeService.getAllByFirstNameStartingWith(firstName);
+
+        assertTrue(!employees.isEmpty());
+
+        employees.forEach(x -> {
+            assertTrue(x.getFirstName().startsWith(firstName));
+        });
+    }
+}
+```
 
 
 

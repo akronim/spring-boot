@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -44,7 +45,8 @@ public class HomeController {
 		return "home/view-1";
 	}
 
-	@RequestMapping(method = RequestMethod.GET, value = "/view-2")
+	// @RequestMapping(method = RequestMethod.GET, value = "/view-2")
+	@GetMapping("/view-2")
 	public String method_2(Model model) {
 		List<Employee> employees = employeeService.getAllByFirstNameStartingWith("Al");
 
