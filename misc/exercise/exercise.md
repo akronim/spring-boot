@@ -2565,7 +2565,64 @@ public String method_2(Model model) {
 </table>
 ```
 
-### HomeController.java: new employee
+### HomeController.java - mvc controller can return raw (json) data, not a view 
+```java
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+// ...
+
+// http://localhost:8102/mdb-spring-boot/home/employees-by-department?department=IT
+@RequestMapping(path = "/employees-by-department", produces = "application/json; charset=UTF-8")
+@ResponseBody // it binds a method return value to the web response body, it is not
+                // interpreted as a view name
+public List<Employee> getEmployeesByDepartment(@RequestParam(name = "department") String department) {
+    return employeeService.getAllByDepartment(department);
+}
+```
+
+### including jQuery
+### create folder velocity\views\common and file velocity\views\common\scripts.vm
+
+### views\common\scripts.vm
+```
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+```
+
+### add this to layout-1.vm and layout-2.vm
+```
+<head>
+    #parse("common/scripts.vm")
+```
+
+### view-1-vm
+```
+<button id="btnGetEmployees">Get employees</button>
+
+<div>
+    <ul id="employeesByDepartment"></ul>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#btnGetEmployees').click(function () {
+
+            $.getJSON('/mdb-spring-boot/home/employees-by-department?department=IT', function (data) {
+
+                $("ul#employeesByDepartment > li").remove();
+
+                $.each(data, function (key, value) {
+                    $("#employeesByDepartment").append(
+                        '<li>' + value['firstName'] + " " + value['lastName'] + '</li>'
+                    );
+                });
+            });
+        });
+    });
+</script>
+```
+
+### HomeController.java: new employee + validation example
 ```java
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -2586,7 +2643,6 @@ public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employe
 	return "redirect:/home/view-2";
 }
 ```
-
 
 ### macros.vm: add new macro
 ```

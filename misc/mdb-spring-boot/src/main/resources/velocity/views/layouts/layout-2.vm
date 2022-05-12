@@ -1,5 +1,6 @@
 <html>
     <head>
+        #parse("common/scripts.vm")
         <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
         <style>
             body {

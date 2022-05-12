@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -81,5 +83,13 @@ public class HomeController {
 	public void addAttributes(Model model) {
 		model.addAttribute("WikipediaLinkLabel", "Wikipedia");
 		model.addAttribute("WikipediaLink", "https://en.wikipedia.org/wiki/Java_(programming_language)");
+	}
+
+	// http://localhost:8102/mdb-spring-boot/home/employees-by-department?department=IT
+	@RequestMapping(path = "/employees-by-department", produces = "application/json; charset=UTF-8")
+	@ResponseBody // it binds a method return value to the web response body, it is not
+					// interpreted as a view name
+	public List<Employee> getEmployeesByDepartment(@RequestParam(name = "department") String department) {
+		return employeeService.getAllByDepartment(department);
 	}
 }
