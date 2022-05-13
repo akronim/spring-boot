@@ -26,49 +26,81 @@
         #end
     </table>
 
-    <form class="employee-form" method="post" action="/mdb-spring-boot/home/save_employee">
+    <form class="employee-form" method="post" action="/mdb-spring-boot/home/save-employee">
 
         <div>
             <label for="firstname">First name:</label>
-            <input type="text" id="firstname" name="firstName">
+            <input type="text" id="firstname" name="firstName" value="$!employee.firstName">
         </div>
 
         <div>
             <label for="lastname">Last name:</label>
-            <input type="text" id="lastname" name="lastName">
+            <input type="text" id="lastname" name="lastName" value="$!employee.lastName">
         </div>
 
         <div>
             <label for="email">Email:</label>
-            <input type="text" id="email" name="email">
+            <input type="text" id="email" name="email" value="$!employee.email">
         </div>
 
         <div>
             <label for="gender">Gender:</label>
-            <input type="text" id="gender" name="gender">
+            <input type="text" id="gender" name="gender" value="$!employee.gender">
         </div>
 
         <div>
             <label for="department">Department:</label>
-            <input type="text" id="department" name="department">
+            <input type="text" id="department" name="department" value="$!employee.department">
         </div>
 
         <div>
             <label for="projects">Projects:</label>
-            <input type="text" id="projects" name="projects">
+            <input type="text" id="projects" name="projects" value="$!employee.projects">
         </div>
 
         <div>
             <label for="salary">Salary:</label>
-            <input type="text" id="salary" name="salary">
+            <input type="text" id="salary" name="salary" value="$!employee.salary">
         </div>
 
         <div>
             <label for="mobile">Mobile:</label>
-            <input type="text" id="mobile" name="mobile">
+            <input type="text" id="mobile" name="mobile" value="$!employee.mobile">
         </div>
 
         <button type="submit">Add</button>
+        <button id="btnAjaxSubmit" type="button">Add (ajax)</button>
     </form>
-    #renderValidationErrors($validationErros)
+    #renderValidationErrors($validationErrors)
+    <script>
+        (function ($) {
+            $.fn.getFormData = function () {
+                let data = {};
+                let dataArray = $(this).serializeArray();
+
+                for (let i = 0; i < dataArray.length; i++) {
+                    data[dataArray[i].name] = dataArray[i].value;
+                }
+
+                return data;
+            };
+        })(jQuery);
+
+        $("#btnAjaxSubmit").on("click", (e) => {
+            e.preventDefault();
+
+            var formData = $(".employee-form").getFormData();
+
+            $.ajax({
+                type: "POST",
+                url: "/mdb-spring-boot/home/save-employee-ajax",
+                data: JSON.stringify(formData),
+                contentType: 'application/json', // what type of content we're sending
+            }).done(function (data) {
+                document.documentElement.innerHTML = data;
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log(jqXHR.responseText || textStatus);
+            })            
+        });
+    </script>
 </div>

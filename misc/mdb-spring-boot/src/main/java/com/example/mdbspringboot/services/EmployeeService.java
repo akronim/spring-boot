@@ -43,4 +43,6 @@ public interface EmployeeService {
 
     // here we are using MongoTemplate based repository
     Employee findById(String id) throws EmployeeNotFoundException;
+
+    String getEmployeesCount(String inputArg);
 }

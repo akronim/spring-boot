@@ -802,8 +802,13 @@ import com.example.mdbspringboot.repository.EmployeeRepository;
 
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     private final EmployeeRepository employeeRepository;
 
     public EmployeeService(EmployeeRepository employeeRepository) {
@@ -1200,32 +1205,23 @@ public Map<String, String> handleBusinessException(EmployeeNotFoundException ex)
 
 
 ### refactoring EmployeeServiceImpl DI
-#### replace this
-```java
-@Service
-public class EmployeeServiceImpl implements EmployeeService {
-    private final EmployeeRepository employeeRepository;
-
-    public EmployeeService(EmployeeRepository employeeRepository) {
-        this.employeeRepository = employeeRepository;
-    }
-
-    // the rest skipped for brevity
-
-}
-```
-#### with this
 ```java
 import lombok.RequiredArgsConstructor;
 
+// ...
+
+// @Service
 @Service
 @RequiredArgsConstructor
-public class EmployeeServiceImpl implements EmployeeService {
-    private final EmployeeRepository employeeRepository;
 
-    // the rest skipped for brevity
+// ...
 
-}
+// private final EmployeeRepository employeeRepository;
+
+// public EmployeeService(EmployeeRepository employeeRepository) {
+//     this.employeeRepository = employeeRepository;
+// }
+private final EmployeeRepository employeeRepository;
 ```
 
 ### refactoring EmployeeController DI
@@ -1268,32 +1264,19 @@ public class EmployeeController {
 
 
 ### refactoring EmployeeServiceImpl DI - another way
-#### replace this
 ```java
-import lombok.RequiredArgsConstructor;
-
-@Service
-@RequiredArgsConstructor
-public class EmployeeServiceImpl implements EmployeeService {
-    private final EmployeeRepository employeeRepository;
-
-    // the rest skipped for brevity
-
-}
-```
-#### with this
-```java
+// import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
+// @Service
+// @RequiredArgsConstructor
 @Service
-public class EmployeeServiceImpl implements EmployeeService {
 
-    @Autowired
-    EmployeeRepository employeeRepository;
+// ...
 
-    // the rest skipped for brevity
-
-}
+// private final EmployeeRepository employeeRepository;
+@Autowired
+EmployeeRepository employeeRepository;
 ```
 
 ### refactoring EmployeeController DI - another way
@@ -1614,8 +1597,14 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Criteria;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Repository
 public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepositoryTwo {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -2631,16 +2620,23 @@ import com.example.mdbspringboot.dto.EmployeeDTO;
 import javax.validation.Valid;
 
 import org.springframework.validation.BindingResult;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 // ...
 
 // validation example
-@RequestMapping(value = "/save_employee", method = RequestMethod.POST)
-public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
-	if (!bindingResult.hasErrors()) {
-		employeeService.addEmployee(employee);
-	}
-	return "redirect:/home/view-2";
+@RequestMapping(value = "/save-employee", method = RequestMethod.POST)
+public String addEmployee(final RedirectAttributes redirectAttributes,
+        @Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
+
+    if (bindingResult.hasErrors()) {
+        redirectAttributes.addFlashAttribute("validationErrors", bindingResult.getAllErrors());
+        redirectAttributes.addFlashAttribute("employee", employee);
+    } else {
+        employeeService.addEmployee(employee);
+    }
+
+    return "redirect:/home/view-2";
 }
 ```
 
@@ -2661,52 +2657,118 @@ public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employe
 
 ### view-2.vm: add the form to the view-2-container
 ```
-<form class="employee-form" method="post" action="/mdb-spring-boot/home/save_employee">
+<form class="employee-form" method="post" action="/mdb-spring-boot/home/save-employee">
 
     <div>
         <label for="firstname">First name:</label>
-        <input type="text" id="firstname" name="firstName">
+        <input type="text" id="firstname" name="firstName" value="$!employee.firstName">
     </div>
 
     <div>
         <label for="lastname">Last name:</label>
-        <input type="text" id="lastname" name="lastName">
+        <input type="text" id="lastname" name="lastName" value="$!employee.lastName">
     </div>
 
     <div>
         <label for="email">Email:</label>
-        <input type="text" id="email" name="email">
+        <input type="text" id="email" name="email" value="$!employee.email">
     </div>
 
     <div>
         <label for="gender">Gender:</label>
-        <input type="text" id="gender" name="gender">
+        <input type="text" id="gender" name="gender" value="$!employee.gender">
     </div>
 
     <div>
         <label for="department">Department:</label>
-        <input type="text" id="department" name="department">
+        <input type="text" id="department" name="department" value="$!employee.department">
     </div>
 
     <div>
         <label for="projects">Projects:</label>
-        <input type="text" id="projects" name="projects">
+        <input type="text" id="projects" name="projects" value="$!employee.projects">
     </div>
 
     <div>
         <label for="salary">Salary:</label>
-        <input type="text" id="salary" name="salary">
+        <input type="text" id="salary" name="salary" value="$!employee.salary">
     </div>
 
     <div>
         <label for="mobile">Mobile:</label>
-        <input type="text" id="mobile" name="mobile">
+        <input type="text" id="mobile" name="mobile" value="$!employee.mobile">
     </div>
 
     <button type="submit">Add</button>
 </form>
-#renderValidationErrors($validationErros)
+#renderValidationErrors($validationErrors)
 
+```
+
+### HomeController.java: new employee AJAX + validation
+```java
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.MediaType;
+
+// ...
+
+@RequestMapping(value = "/save-employee-ajax", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+public RedirectView addEmployeeAjax(final RedirectAttributes redirectAttributes, @Valid @RequestBody EmployeeDTO employee,
+        BindingResult bindingResult) {
+
+    if (bindingResult.hasErrors()) {
+        redirectAttributes.addFlashAttribute("validationErrors", bindingResult.getAllErrors());
+        redirectAttributes.addFlashAttribute("employee", employee);
+    } else {
+        employeeService.addEmployee(employee);
+    }
+
+    RedirectView redirectView = new RedirectView();
+    redirectView.setExposeModelAttributes(true);
+    redirectView.setUrl("/mdb-spring-boot/home/view-2");
+    return redirectView;
+}
+```
+
+### view-2.vm
+#### add new form button
+```
+<button id="btnAjaxSubmit" type="button">Add (ajax)</button>
+```
+#### add script section
+```html
+<script>
+    (function ($) {
+        $.fn.getFormData = function () {
+            let data = {};
+            let dataArray = $(this).serializeArray();
+
+            for (let i = 0; i < dataArray.length; i++) {
+                data[dataArray[i].name] = dataArray[i].value;
+            }
+
+            return data;
+        };
+    })(jQuery);
+
+    $("#btnAjaxSubmit").on("click", (e) => {
+        e.preventDefault();
+
+        var formData = $(".employee-form").getFormData();
+
+        $.ajax({
+            type: "POST",
+            url: "/mdb-spring-boot/home/save-employee-ajax",
+            data: JSON.stringify(formData),
+            contentType: 'application/json', // what type of content we're sending
+        }).done(function (data) {
+            document.documentElement.innerHTML = data;
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.log(jqXHR.responseText || textStatus);
+        })            
+    });
+</script>
 ```
 
 ### add new styles to: resources/static/styles/styles.css
@@ -2943,45 +3005,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import com.example.mdbspringboot.model.Employee;
-import com.example.mdbspringboot.repository.EmployeeRepository;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+// here, we do not mock EmployeeRepository
 
 @SpringBootTest
 class EmployeeServiceTest {
 
     @Autowired
     private EmployeeService employeeService;
-
-    @MockBean
-    private EmployeeRepository employeeRepository;
-
-    @BeforeEach
-    void setUp() {
-        // we will mock EmployeeRepository
-
-        Employee employee1 = Employee.builder()
-                .firstName("Alex")
-                .lastName("Moore")
-                .email("alex@moore.com")
-                .gender("Male")
-                .department("IT")
-                .projects(List.of("Project 3", "Project 5", "Project 6"))
-                .salary(6350.0)
-                .mobile("123 345 6789")
-                .build();
-
-        String firstName = "Al";
-        Mockito.when(employeeRepository.findByFirstNameStartingWith(firstName))
-                .thenReturn(List.of(employee1));
-
-    }
 
     @DisplayName("getAllByFirstNameStartingWith | GIVEN ... " +
             "SHOULD ...")
@@ -2992,6 +3030,8 @@ class EmployeeServiceTest {
         List<Employee> employees = employeeService.getAllByFirstNameStartingWith(firstName);
 
         assertTrue(!employees.isEmpty());
+
+        LOG.info("\n\n>>>>> employees count: {}\n", employees.size());
 
         employees.forEach(x -> {
             assertTrue(x.getFirstName().startsWith(firstName));
@@ -3079,17 +3119,323 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
 ```
 
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceMockTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.repository.EmployeeRepository;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+class EmployeeServiceMockTest {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @MockBean
+    private EmployeeRepository employeeRepository;
+
+    @BeforeEach
+    void setUp() {
+        // we will mock EmployeeRepository
+
+        Employee employee1 = Employee.builder()
+                .firstName("Alex")
+                .lastName("Moore")
+                .email("alex@moore.com")
+                .gender("Male")
+                .department("IT")
+                .projects(List.of("Project 3", "Project 5", "Project 6"))
+                .salary(6350.0)
+                .mobile("123 345 6789")
+                .build();
+
+        String firstName = "Al";
+        Mockito.when(employeeRepository.findByFirstNameStartingWith(firstName))
+                .thenReturn(List.of(employee1));
+
+    }
+
+    @DisplayName("getAllByFirstNameStartingWith | GIVEN ... " +
+            "SHOULD ...")
+    @Test
+    void getAllByFirstNameStartingWith_x1() {
+        String firstName = "Al";
+
+        List<Employee> employees = employeeService.getAllByFirstNameStartingWith(firstName);
+
+        assertTrue(!employees.isEmpty());
+
+        LOG.info("\n\n>>>>> employees count: {}\n", employees.size());
+
+        employees.forEach(x -> {
+            assertTrue(x.getFirstName().startsWith(firstName));
+        });
+    }
+}
+```
+
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceMockTwoTest.java => another way when mocking
+- copy the content from EmployeeServiceMockTest and replace these lines
+```java
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.boot.test.mock.mockito.MockBean;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
+// @Autowired
+// private EmployeeService employeeService;
+
+// @MockBean
+// private EmployeeRepository employeeRepository;
+
+@InjectMocks // will auto-inject EmployeeService
+private EmployeeService employeeService = new EmployeeServiceImpl();
+
+@Mock
+private EmployeeRepository employeeRepository;
+```
+
+
+### EmployeeService.java
+```java
+String getEmployeesCount(String inputArg);
+```
+
+
+### EmployeeServiceImpl.java
+```java
+public String getEmployeesCount(String inputArg) {
+    var employeesCount = customEmployeeRepositoryTwo.getEmployeesCount(inputArg);
+    var resultMessage = "SERVICE: " + employeesCount;
+
+    LOG.info("\n\n>>>>> EmployeeServiceImpl \n");
+    LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
+    
+    return resultMessage;
+}
+```
+
+### CustomEmployeeRepositoryTwo.java
+```java
+String getEmployeesCount(String inputArg);
+```
+
+### CustomEmployeeRepositoryTwoImpl.java
+```java
+@Override
+public String getEmployeesCount(String inputArg) {
+    var employeesCount = mongoTemplate.findAll(Employee.class).size();
+    var resultMessage = "REPOSITORY - " + inputArg + " | COUNT: " + employeesCount;
+
+    LOG.info("\n\n>>>>> CustomEmployeeRepositoryTwoImpl \n");
+    LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
+
+    return resultMessage;
+}
+```
+
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceSpyTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
+import com.example.mdbspringboot.repository.EmployeeRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.TestPropertySource;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceSpyTest {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    EmployeeService employeeService;
+
+    @SpyBean
+    private EmployeeRepository employeeRepository;
+
+    @SpyBean
+    private CustomEmployeeRepositoryTwo customEmployeeRepositoryTwo;
+
+    @DisplayName("getEmployeesCount - spying, but without exploiting it | GIVEN ... " +
+            "SHOULD ...")
+    @Test
+    void getEmployeesCount_x1() {
+        String message = employeeService.getEmployeesCount("foobar");
+        LOG.info("\n\n::::: getEmployeesCount_x1: {}\n", message);
+
+        assertTrue(message.startsWith("SERVICE: REPOSITORY"));
+    }
+
+    @DisplayName("getEmployeesCount - spying and exploiting it | GIVEN ... " +
+            "SHOULD ...")
+    @Test
+    void getEmployeesCount_x2() {
+        String mockMessage = "mock message";
+
+        Mockito.when(customEmployeeRepositoryTwo.getEmployeesCount("foobar")).thenReturn(mockMessage);
+
+        String message = employeeService.getEmployeesCount("foobar");
+        LOG.info("\n\n::::: getEmployeesCount_x2: {}\n", message);
+
+        String expected = "SERVICE: " + mockMessage;
+
+        assertEquals(expected, message);
+    }
+
+    // use Mockito.spy() to mock the same class you are testing
+    @DisplayName("getEmployeesCount - spying the same class we are testing | GIVEN ... " +
+            "SHOULD ...")
+    @Test
+    void getEmployeesCount_x3() {
+        EmployeeService empService = Mockito.spy(employeeService);
+
+        String expected = "FOO";
+
+        Mockito.doReturn(expected).when(empService).getEmployeesCount("foobar");
+
+        String actual = empService.getEmployeesCount("foobar");
+        LOG.info("\n\n::::: getEmployeesCount_x3: {}\n", actual);
+
+        assertEquals(expected, actual);
+    }
+
+}
+```
 
 
 
+### how to test private methods
+### EmployeeServiceImpl.java
+```java
+private String getEmployeesCountPrivate(String inputArg) {
+    var employeesCount = customEmployeeRepositoryTwo.getEmployeesCount(inputArg);
+    var resultMessage = "SERVICE: " + employeesCount;
 
+    LOG.info("\n\n>>>>> EmployeeServiceImpl \n");
+    LOG.info("\n\n>>>>> getEmployeesCountPrivate: {}\n", resultMessage);
+    
+    return resultMessage;
+}
+```
 
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceReflectionTestUtilsTest.java
+```java
+package com.example.mdbspringboot.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+// ReflectionTestUtils
+// - used to set the non-public fields, invoke non-public methods, and inject dependencies
 
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceReflectionTestUtilsTest {
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
 
+    @Autowired
+    EmployeeService employeeService;
+
+    @Test
+    public void getEmployeesCountPrivate_x1() {
+
+        var result = ReflectionTestUtils.invokeMethod(employeeService, "getEmployeesCountPrivate", "Lorem" );
+        LOG.info("\n\n::::: getEmployeesCountPrivate_x1: {}\n", result);
+
+        assertTrue(result.toString().startsWith("SERVICE: REPOSITORY - Lorem | COUNT:"));
+    }
+}
+```
+
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceArgumentCaptureTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceArgumentCaptureTest {
+    
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @MockBean
+    private CustomEmployeeRepositoryTwo customEmployeeRepositoryTwo;
+
+    @Captor
+    ArgumentCaptor<String> argCaptor;
+
+    @Test
+    public void getEmployeesCount_x1() {
+        employeeService.getEmployeesCount("This is an argument");
+
+        Mockito.verify(customEmployeeRepositoryTwo).getEmployeesCount(argCaptor.capture());
+
+        String capturedArg = argCaptor.getValue();
+
+        assertEquals("This is an argument", capturedArg);
+    }
+}
+```
 
 
 

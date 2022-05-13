@@ -14,16 +14,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Controller
 @RequestMapping("/home")
@@ -57,14 +61,35 @@ public class HomeController {
 		return "home/view-2";
 	}
 
-	@RequestMapping(value = "/save_employee", method = RequestMethod.POST)
-	public String addEmployee(@Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
+	@RequestMapping(value = "/save-employee", method = RequestMethod.POST)
+	public String addEmployee(final RedirectAttributes redirectAttributes,
+			@Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
 
-		if (!bindingResult.hasErrors()) {
+		if (bindingResult.hasErrors()) {
+			redirectAttributes.addFlashAttribute("validationErrors", bindingResult.getAllErrors());
+			redirectAttributes.addFlashAttribute("employee", employee);
+		} else {
 			employeeService.addEmployee(employee);
 		}
 
 		return "redirect:/home/view-2";
+	}
+
+	@RequestMapping(value = "/save-employee-ajax", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public RedirectView addEmployeeAjax(final RedirectAttributes redirectAttributes, @Valid @RequestBody EmployeeDTO employee,
+			BindingResult bindingResult) {
+
+		if (bindingResult.hasErrors()) {
+			redirectAttributes.addFlashAttribute("validationErrors", bindingResult.getAllErrors());
+			redirectAttributes.addFlashAttribute("employee", employee);
+		} else {
+			employeeService.addEmployee(employee);
+		}
+
+		RedirectView redirectView = new RedirectView();
+		redirectView.setExposeModelAttributes(true);
+		redirectView.setUrl("/mdb-spring-boot/home/view-2");
+		return redirectView;
 	}
 
 	@VelocityLayout("/layouts/layout-2.vm") // overrides default layout

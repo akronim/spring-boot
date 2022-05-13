@@ -10,4 +10,6 @@ public interface CustomEmployeeRepositoryTwo {
     void saveAll(final List<Employee> employees);
 
     Employee findById(final String employeeId);
+
+    String getEmployeesCount(String inputArg);
 }

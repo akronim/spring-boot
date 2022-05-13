@@ -23,8 +23,13 @@ import org.springframework.data.domain.PageRequest;
 
 import org.springframework.data.domain.Example;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     @Autowired
     EmployeeRepository employeeRepository;
@@ -160,5 +165,25 @@ public class EmployeeServiceImpl implements EmployeeService {
         } else {
             throw new EmployeeNotFoundException("employee not found with id : " + id);
         }
+    }
+
+    public String getEmployeesCount(String inputArg) {
+        var employeesCount = customEmployeeRepositoryTwo.getEmployeesCount(inputArg);
+        var resultMessage = "SERVICE: " + employeesCount;
+
+        LOG.info("\n\n>>>>> EmployeeServiceImpl \n");
+        LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
+        
+        return resultMessage;
+    }
+
+    private String getEmployeesCountPrivate(String inputArg) {
+        var employeesCount = customEmployeeRepositoryTwo.getEmployeesCount(inputArg);
+        var resultMessage = "SERVICE: " + employeesCount;
+    
+        LOG.info("\n\n>>>>> EmployeeServiceImpl \n");
+        LOG.info("\n\n>>>>> getEmployeesCountPrivate: {}\n", resultMessage);
+        
+        return resultMessage;
     }
 }

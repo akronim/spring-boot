@@ -11,8 +11,14 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Criteria;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Repository
 public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepositoryTwo {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -29,5 +35,16 @@ public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepository
         query.addCriteria(Criteria.where("id").is(employeeId));
 
         return mongoTemplate.findOne(query, Employee.class);
+    }
+
+    @Override
+    public String getEmployeesCount(String inputArg) {
+        var employeesCount = mongoTemplate.findAll(Employee.class).size();
+        var resultMessage = "REPOSITORY - " + inputArg + " | COUNT: " + employeesCount;
+
+        LOG.info("\n\n>>>>> CustomEmployeeRepositoryTwoImpl \n");
+        LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
+
+        return resultMessage;
     }
 }
