@@ -692,6 +692,14 @@ import javax.validation.constraints.*;
 
 @Data
 @AllArgsConstructor(staticName = "build")
+/*
+@AllArgsConstructor(staticName = "build") => with this we can create new object like this:
+
+EmployeeDTO employeeDTO = EmployeeDTO.build("Alex", "Moore",
+        "alex@moore.com", "Male", "IT",
+        List.of("Project 3", "Project 5", "Project 6"), 6350.0,
+        "123 345 6789");
+*/
 @NoArgsConstructor // empty => default
 public class EmployeeDTO {
     @NotBlank(message = "first name shouldn't be blank")
@@ -2625,7 +2633,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 // ...
 
 // validation example
-@RequestMapping(value = "/save-employee", method = RequestMethod.POST)
+@RequestMapping(value = "/save-employee", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 public String addEmployee(final RedirectAttributes redirectAttributes,
         @Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
 
@@ -2643,14 +2651,16 @@ public String addEmployee(final RedirectAttributes redirectAttributes,
 ### macros.vm: add new macro
 ```
 #macro(renderValidationErrors $erros)
-    #if($!erros && $erros.size() != 0)
-        #foreach($error in $erros)
-            <div style="color:red">
-                <div style="float:left; margin-right:10px">$error.getField()</div>
-                <div>$error.getDefaultMessage()</div>
-            </div>
+    <div class="validation-errors">
+        #if($!erros && $erros.size() != 0)
+            #foreach($error in $erros)
+                <div style="color:red">
+                    <div style="float:left; margin-right:10px">$error.getField()</div>
+                    <div>$error.getDefaultMessage()</div>
+                </div>
+            #end
         #end
-    #end
+    </div>
 #end
 ```
 
@@ -2684,9 +2694,18 @@ public String addEmployee(final RedirectAttributes redirectAttributes,
         <input type="text" id="department" name="department" value="$!employee.department">
     </div>
 
+    #set ($employeeProjects = "")
+    #foreach( $project in $!employee.projects )
+        #if($!employeeProjects == "")
+            #set ($employeeProjects = $project)
+        #else
+            #set ($employeeProjects = $employeeProjects + ', ' + $project)
+        #end
+    #end
+
     <div>
         <label for="projects">Projects:</label>
-        <input type="text" id="projects" name="projects" value="$!employee.projects">
+        <input type="text" id="projects" name="projects" value="$!employeeProjects">
     </div>
 
     <div>
@@ -2756,6 +2775,7 @@ public RedirectView addEmployeeAjax(final RedirectAttributes redirectAttributes,
         e.preventDefault();
 
         var formData = $(".employee-form").getFormData();
+        formData.projects = formData.projects.split(",");
 
         $.ajax({
             type: "POST",
@@ -2763,7 +2783,10 @@ public RedirectView addEmployeeAjax(final RedirectAttributes redirectAttributes,
             data: JSON.stringify(formData),
             contentType: 'application/json', // what type of content we're sending
         }).done(function (data) {
-            document.documentElement.innerHTML = data;
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(data, 'text/html');
+            document.querySelector(".validation-errors").innerHTML = doc.querySelector(".validation-errors").innerHTML;
+            document.querySelector(".employees-table").innerHTML = doc.querySelector(".employees-table").innerHTML;
         }).fail(function (jqXHR, textStatus, errorThrown) {
             console.log(jqXHR.responseText || textStatus);
         })            
@@ -2892,6 +2915,7 @@ public void addAttributes(Model model) {
 ### velocity END
 
 ### testing
+https://mkyong.com/spring-boot/spring-rest-integration-test-example/
 ### pom.xml: add this dependency
 ```xml
 <dependency>
@@ -2964,13 +2988,18 @@ public class HomeControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void testMethod_1() throws Exception {
+    void method_1_x1() throws Exception {
         // when
-        ResultActions resultActions = mockMvc.perform(get("/home/view-1").contentType(MediaType.APPLICATION_JSON));
+        ResultActions resultActions = mockMvc
+                .perform(get("/home/view-1"));
 
         // then
         resultActions.andExpect(status().isOk())
-                .andExpect(content().string(containsString("<div class=\"view-1-container\">")))
+                .andExpect(status().isOk())
+                .andExpect(content()
+                        .contentType(MediaType.valueOf("text/html;charset=UTF-8")))
+                .andExpect(content()
+                        .string(containsString("<div class=\"view-1-container\">")))
                 .andReturn();
     }
 }
@@ -3151,7 +3180,9 @@ class EmployeeServiceMockTest {
     @Autowired
     private EmployeeService employeeService;
 
-    @MockBean
+    // Spring Boot's Annotation (different from Mockito's @Mock Annotation)
+    // The mock will replace any existing bean of the same type in the application context
+    @MockBean 
     private EmployeeRepository employeeRepository;
 
     @BeforeEach
@@ -3212,6 +3243,8 @@ import org.mockito.Mock;
 @InjectMocks // will auto-inject EmployeeService
 private EmployeeService employeeService = new EmployeeServiceImpl();
 
+// Mockito's Annotation (a shorthand for the Mockito.mock() method)
+// - when used in conjunction with @InjectMocks, it can reduce the amount of setup code significantly
 @Mock
 private EmployeeRepository employeeRepository;
 ```
@@ -3418,6 +3451,8 @@ public class EmployeeServiceArgumentCaptureTest {
     @Autowired
     private EmployeeService employeeService;
 
+    // Spring Boot's Annotation (different from Mockito's @Mock Annotation)
+    // The mock will replace any existing bean of the same type in the application context
     @MockBean
     private CustomEmployeeRepositoryTwo customEmployeeRepositoryTwo;
 
@@ -3437,6 +3472,102 @@ public class EmployeeServiceArgumentCaptureTest {
 }
 ```
 
+### HomeControllerTest - testing HomeController's getEmployeesByDepartment method
+```java
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.URL;
+
+import com.example.mdbspringboot.model.Employee;
 
 
+// ...
 
+// @SpringBootTest
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT) // for restTemplate
+
+// ...
+
+@Autowired
+// client - can also be used to send http requests
+private TestRestTemplate restTemplate;
+
+// bind the above RANDOM_PORT
+@LocalServerPort
+private int port;
+
+// ...
+
+@Test
+public void getEmployeesByDepartment_x1() throws Exception {
+
+    String department = "IT";
+
+    ResponseEntity<Employee[]> response = restTemplate
+            .getForEntity(
+                    new URL("http://localhost:" + port
+                            + "/mdb-spring-boot/home/employees-by-department?department="
+                            + department)
+                            .toString(),
+                    Employee[].class);
+
+    Employee[] employees = response.getBody();
+    assertTrue(employees.length > 0);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(MediaType.valueOf("application/json;charset=UTF-8"),
+            response.getHeaders().getContentType());
+
+    for (Employee employee : employees) {
+        assertTrue(employee.getDepartment().equals(department));
+    }
+}
+```
+
+### testing HomeController's addEmployee method
+### pom.xml
+```xml
+<dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+</dependency>
+```
+
+### HomeControllerTest.java
+```java
+import java.util.List;
+
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+
+
+@Test
+void addEmployee_x1() throws Exception {
+    var employee = List.of(
+            new BasicNameValuePair("firstName", "Alex"),
+            new BasicNameValuePair("lastName", "Moore"),
+            new BasicNameValuePair("email", "alex@moore.com"),
+            new BasicNameValuePair("gender", "Male"),
+            new BasicNameValuePair("department", "IT"),
+            new BasicNameValuePair("projects", "['Project 3', 'Project 5', 'Project 6']"),
+            new BasicNameValuePair("salary", "6350.0"),
+            // an invalid input
+            new BasicNameValuePair("mobile", "123x345x6789"));
+
+    mockMvc.perform(post("/home/save-employee")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .content(EntityUtils.toString(new UrlEncodedFormEntity(employee))))
+            .andExpect(flash().attributeExists("validationErrors"))
+            .andExpect(view().name("redirect:/home/view-2"));
+}
+```

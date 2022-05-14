@@ -16,12 +16,14 @@
 #end
 
 #macro(renderValidationErrors $erros)
-    #if($!erros && $erros.size() != 0)
-        #foreach($error in $erros)
-            <div style="color:red">
-                <div style="float:left; margin-right:10px">$error.getField()</div>
-                <div>$error.getDefaultMessage()</div>
-            </div>
+    <div class="validation-errors">
+        #if($!erros && $erros.size() != 0)
+            #foreach($error in $erros)
+                <div style="color:red">
+                    <div style="float:left; margin-right:10px">$error.getField()</div>
+                    <div>$error.getDefaultMessage()</div>
+                </div>
+            #end
         #end
-    #end
+    </div>
 #end

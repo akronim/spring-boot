@@ -53,9 +53,18 @@
             <input type="text" id="department" name="department" value="$!employee.department">
         </div>
 
+        #set ($employeeProjects = "")
+        #foreach( $project in $!employee.projects )
+            #if($!employeeProjects == "")
+                #set ($employeeProjects = $project)
+            #else
+                #set ($employeeProjects = $employeeProjects + ', ' + $project)
+            #end
+        #end
+
         <div>
             <label for="projects">Projects:</label>
-            <input type="text" id="projects" name="projects" value="$!employee.projects">
+            <input type="text" id="projects" name="projects" value="$!employeeProjects">
         </div>
 
         <div>
@@ -90,6 +99,7 @@
             e.preventDefault();
 
             var formData = $(".employee-form").getFormData();
+            formData.projects = formData.projects.split(",");
 
             $.ajax({
                 type: "POST",
@@ -97,7 +107,10 @@
                 data: JSON.stringify(formData),
                 contentType: 'application/json', // what type of content we're sending
             }).done(function (data) {
-                document.documentElement.innerHTML = data;
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(data, 'text/html');
+                document.querySelector(".validation-errors").innerHTML = doc.querySelector(".validation-errors").innerHTML;
+                document.querySelector(".employees-table").innerHTML = doc.querySelector(".employees-table").innerHTML;
             }).fail(function (jqXHR, textStatus, errorThrown) {
                 console.log(jqXHR.responseText || textStatus);
             })            

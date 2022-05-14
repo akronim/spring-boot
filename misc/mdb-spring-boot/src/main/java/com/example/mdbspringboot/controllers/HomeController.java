@@ -61,7 +61,7 @@ public class HomeController {
 		return "home/view-2";
 	}
 
-	@RequestMapping(value = "/save-employee", method = RequestMethod.POST)
+	@RequestMapping(value = "/save-employee", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 	public String addEmployee(final RedirectAttributes redirectAttributes,
 			@Valid @ModelAttribute("employee") EmployeeDTO employee, BindingResult bindingResult) {
 
@@ -76,7 +76,8 @@ public class HomeController {
 	}
 
 	@RequestMapping(value = "/save-employee-ajax", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-	public RedirectView addEmployeeAjax(final RedirectAttributes redirectAttributes, @Valid @RequestBody EmployeeDTO employee,
+	public RedirectView addEmployeeAjax(final RedirectAttributes redirectAttributes,
+			@Valid @RequestBody EmployeeDTO employee,
 			BindingResult bindingResult) {
 
 		if (bindingResult.hasErrors()) {
