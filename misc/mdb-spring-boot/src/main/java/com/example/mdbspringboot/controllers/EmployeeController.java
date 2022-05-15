@@ -104,6 +104,13 @@ public class EmployeeController {
         return "Deleted";
     }
 
+    @GetMapping("/employee-by-email")
+    public ResponseEntity<Employee> getEmployeeByEmail(@RequestParam(name = "email") String email) throws EmployeeNotFoundException {
+        LOG.info("\n>>>>> Getting employee with EMAIL: {}\n", email);
+
+        return ResponseEntity.ok(employeeService.findEmployeeByEmail(email));
+    }
+
     @GetMapping("/page")
     public Map<String, Object> getAllPaged(@RequestParam(name = "pageno", defaultValue = "0") int pageNo,
             @RequestParam(name = "pagesize", defaultValue = "10") int pageSize,

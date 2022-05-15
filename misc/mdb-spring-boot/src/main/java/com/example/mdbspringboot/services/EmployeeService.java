@@ -22,6 +22,8 @@ public interface EmployeeService {
 
     void delete(String id);
 
+    Employee findEmployeeByEmail(String email) throws EmployeeNotFoundException;
+
     Map<String, Object> getAllPaged(int pageNo, int pageSize, String[] fields, String sortBy);
 
     Map<String, Object> getByProjects(String[] projects);

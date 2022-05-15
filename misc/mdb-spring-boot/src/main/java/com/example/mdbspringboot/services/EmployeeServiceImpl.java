@@ -96,6 +96,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeRepository.deleteById(id);
     }
 
+    @Override
+    public Employee findEmployeeByEmail(String email) throws EmployeeNotFoundException {
+        return employeeRepository.findEmployeeByEmail(email)
+                .orElseThrow(() -> new EmployeeNotFoundException("employee not found with email : " + email));
+    }
+
     public Map<String, Object> getAllPaged(int pageNo, int pageSize, String[] fields, String sortBy) {
         Map<String, Object> response = new HashMap<String, Object>();
 

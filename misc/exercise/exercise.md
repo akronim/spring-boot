@@ -1267,8 +1267,49 @@ public class EmployeeController {
 }
 ```
 
+### findEmployeeByEmail - EmployeeRepository
+```java
+import java.util.Optional;
 
-### refactor EmployeeController to use ResponseEntity
+// the rest skipped for brevity
+
+// queries from method names
+Optional<Employee> findEmployeeByEmail(String email);
+```
+
+### findEmployeeByEmail - EmployeeService
+```java
+Employee findEmployeeByEmail(String email) throws EmployeeNotFoundException;
+```
+
+
+### findEmployeeByEmail - EmployeeServiceImpl
+```java
+@Override
+public Employee findEmployeeByEmail(String email) throws EmployeeNotFoundException {
+    return employeeRepository.findEmployeeByEmail(email)
+            .orElseThrow(() -> new EmployeeNotFoundException("employee not found with email : " + email));
+}
+```
+
+### findEmployeeByEmail - EmployeeController
+```java
+@GetMapping("/employee-by-email")
+public ResponseEntity<Employee> getEmployeeByEmail(@RequestParam(name = "email") String email) throws EmployeeNotFoundException {
+    LOG.info("\n>>>>> Getting employee with EMAIL: {}\n", email);
+
+    return ResponseEntity.ok(employeeService.findEmployeeByEmail(email));
+}
+```
+
+### requests.http
+```
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/employee-by-email?email=john@smith.com
+```
+
+
+### refactor EmployeeController to use ResponseEntity ...
 
 
 ### refactoring EmployeeServiceImpl DI - another way
@@ -1709,15 +1750,6 @@ Content-Type: application/json
 }
 ```
 
-### EmployeeRepository
-```java
-import java.util.Optional;
-
-// the rest skipped for brevity
-
-// queries from method names
-Optional<Employee> findEmployeeByEmail(String email);
-```
 
 ### MdbSpringBootApplication
 ```java
@@ -2914,8 +2946,38 @@ public void addAttributes(Model model) {
 ```
 ### velocity END
 
+
+
+
+
 ### testing
 https://mkyong.com/spring-boot/spring-rest-integration-test-example/
+https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-writing-assertions-with-junit-5-api/
+https://github.com/pkainulainen/junit5-examples/tree/master/unit-tests/writing-assertions/junit5-api
+
+### mock vs spy
+```java
+/*
+ * @MockBean //or Mockito's @Mock
+ * - it mocks the object and all its methods with do nothing and their result
+ * value will be null,
+ * - use for example: when(...) methods to create mocked method behaviour
+ * - use when you want to completely get rid of the object's normal behaviour
+ * 
+ * 
+ * @SpyBean //or Mockito's @Spy
+ * - an object will behave like an @Autowired object
+ * - all its methods will actually works, but we can define some custom behavior
+ * for its methods
+ * - use doReturn(...) / doNothing(...) to add custom (mocked) method behaviour
+ * - use if you want to provide your mock behaviour but not dismiss entirely its
+ * normal behaviour
+ * - the spy object is a wrapper around an actual object of a class
+ */
+
+// source: https://javapointers.com/tutorial/difference-between-spy-and-mock-in
+```
+
 ### pom.xml: add this dependency
 ```xml
 <dependency>
@@ -2961,6 +3023,11 @@ class MdbSpringBootApplicationTests {
 		}
 	}
 }
+```
+
+### run unit tests with maven
+```
+mvn clean test   
 ```
 
 ### src/test/java/com/example/mdbspringboot/controllers/HomeControllerTest.java
@@ -3571,3 +3638,270 @@ void addEmployee_x1() throws Exception {
             .andExpect(view().name("redirect:/home/view-2"));
 }
 ```
+
+### testing exceptions
+### src/test/java/com/example/mdbspringboot/services/EmployeeServiceExceptionTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceExceptionTest {
+
+    @Autowired
+    EmployeeService employeeService;
+
+    @Test
+    @DisplayName("Should throw an Exception if an employee does not exist")
+    public void findEmployeeByEmail_x1() {
+        String email = "foo@bar.com";
+
+        Assertions.assertThrows(EmployeeNotFoundException.class, () -> {
+            employeeService.findEmployeeByEmail(email);
+        });
+    }
+
+    @Test
+    @DisplayName("Should not throw an Exception if an employee does exist")
+    public void findEmployeeByEmail_x2() {
+        String email = "john@smith.com";
+
+        var employee = Assertions.assertDoesNotThrow(() -> {
+            return employeeService.findEmployeeByEmail(email);
+        });
+
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+}
+```
+
+
+### src/test/java/com/example/mdbspringboot/services/EmployeeServiceRepeatedTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+import com.example.mdbspringboot.model.Employee;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceRepeatedTest {
+
+    @Autowired
+    EmployeeService employeeService;
+
+    @DisplayName("Should repeat 5 times")
+    @RepeatedTest(value = 5, name = "Repeating getting employee {currentRepetition} of {totalRepetitions}")
+    public void findEmployeeByEmail_x1() throws EmployeeNotFoundException {
+        String email = "john@smith.com";
+
+        Employee employee = employeeService.findEmployeeByEmail(email);
+
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+}
+```
+
+
+### create folder src/test/resources
+### create file src/test/resources/employees-emails.csv
+```csv
+john@smith.com, 
+mrobertelli3@tinyurl.com, 
+shakonsen7@dyndns.org
+```
+
+### src/test/java/com/example/mdbspringboot/services/EmployeeServiceParameterizedTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import java.util.Arrays;
+import java.util.List;
+
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+import com.example.mdbspringboot.model.Employee;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceParameterizedTest {
+
+    @Autowired
+    EmployeeService employeeService;
+
+    @ParameterizedTest
+    @DisplayName("Should ...")
+    @ValueSource(strings = { "john@smith.com", "mrobertelli3@tinyurl.com", "shakonsen7@dyndns.org" })
+    public void findEmployeeByEmail_x1(String email) throws EmployeeNotFoundException {
+        Employee employee = employeeService.findEmployeeByEmail(email);
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Should ... (CSV Source Case)")
+    @CsvSource({ "john@smith.com", "mrobertelli3@tinyurl.com", "shakonsen7@dyndns.org" })
+    public void findEmployeeByEmail_x2(String email) throws EmployeeNotFoundException {
+        Employee employee = employeeService.findEmployeeByEmail(email);
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Should ... (CSV File Source Case)")
+    @CsvFileSource(resources = "/employees-emails.csv")
+    public void findEmployeeByEmail_x3(String email) throws EmployeeNotFoundException {
+        Employee employee = employeeService.findEmployeeByEmail(email);
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Should ... (Method Source Case)")
+    @MethodSource("employeeEmailList")
+    public void findEmployeeByEmail_x4(String email) throws EmployeeNotFoundException {
+        Employee employee = employeeService.findEmployeeByEmail(email);
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+
+    private static List<String> employeeEmailList() {
+        return Arrays.asList("john@smith.com", "mrobertelli3@tinyurl.com", "shakonsen7@dyndns.org");
+    }
+}
+```
+
+
+### src/test/java/com/example/mdbspringboot/services/EmployeeServiceMiscTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import com.example.mdbspringboot.exception.EmployeeNotFoundException;
+import com.example.mdbspringboot.model.Employee;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+@SpringBootTest
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
+public class EmployeeServiceMiscTest {
+
+    @Autowired
+    EmployeeService employeeService;
+
+    @BeforeAll
+    public static void setupAll() {
+        System.out.println("\n~~~~~ Should Print BEFORE ALL Tests");
+    }
+
+    @BeforeEach
+    public void setup() {
+        System.out.println("\n..... Should Print BEFORE EACH Test");
+    }
+
+    @AfterEach
+    public void tearDown() {
+        System.out.println("\n..... Should Print AFTER EACH Test");
+    }
+
+    @AfterAll
+    public static void tearDownAll() {
+        System.out.println("\n~~~~~ Should Print AFTER ALL Tests");
+    }
+
+    @Test
+    @DisplayName("Should Run only on LINUX")
+    @EnabledOnOs(value = OS.LINUX, disabledReason = "Should Run only on LINUX")
+    public void findEmployeeByEmail_x1() throws EmployeeNotFoundException {
+        String email = "john@smith.com";
+        Employee employee = employeeService.findEmployeeByEmail(email);
+        Assertions.assertEquals(email, employee.getEmail());
+    }
+
+    @Nested
+    class NestedTests {
+        @Test
+        @DisplayName("Should Run only on Developer Machine")
+        public void findEmployeeByEmail_x1() throws EmployeeNotFoundException {
+            //Assumptions.assumeTrue("DEV".equals(System.getProperty("ENV")));
+            Assumptions.assumeTrue("en_US.UTF-8".equals(System.getenv("LANG")));
+
+            String email = "john@smith.com";
+            Employee employee = employeeService.findEmployeeByEmail(email);
+            Assertions.assertEquals(email, employee.getEmail());
+        }
+
+        @Test
+        @DisplayName("Test Should Be Disabled")
+        @Disabled
+        public void shouldBeDisabled() {
+            throw new RuntimeException("Test Should Not be executed");
+        }
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

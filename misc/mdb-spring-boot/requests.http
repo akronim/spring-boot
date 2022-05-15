@@ -121,6 +121,10 @@ DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v2/62646a31
 DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=62646a31b80003b970408eac HTTP/1.1
 
 ###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/employee-by-email?email=john@smith.com
+
+
+###
 GET http://localhost:8102/mdb-spring-boot/api/v1/employees/page?pagesize=20&fields=firstName,lastName,salary&sortby=firstName&pageno=0 HTTP/1.1
 
 
