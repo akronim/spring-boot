@@ -2676,6 +2676,7 @@ public String addEmployee(final RedirectAttributes redirectAttributes,
         employeeService.addEmployee(employee);
     }
 
+    // this is redirection to a controller, not a view
     return "redirect:/home/view-2";
 }
 ```
