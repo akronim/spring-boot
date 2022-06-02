@@ -6,6 +6,7 @@ import com.example.mdbspringboot.model.Employee;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -19,11 +20,13 @@ public class EmployeeServiceRepeatedTest {
 
     @DisplayName("Should repeat 5 times")
     @RepeatedTest(value = 5, name = "Repeating getting employee {currentRepetition} of {totalRepetitions}")
-    public void findEmployeeByEmail_x1() throws EmployeeNotFoundException {
+    public void findEmployeeByEmail_x1(RepetitionInfo repetitionInfo) throws EmployeeNotFoundException {
         String email = "john@smith.com";
 
         Employee employee = employeeService.findEmployeeByEmail(email);
 
         Assertions.assertEquals(email, employee.getEmail());
+
+        var currentRepetition = repetitionInfo.getCurrentRepetition();
     }
 }
