@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
+        <style>
+            body {
+                background-color: LightSkyBlue;
+                font-family: "Arial";
+            }
+        </style>
+        #parse("common/scripts.vm")
+    </head>
+    <body>
+        <div>
+            <div>$!which_layout</div>
+            
+            <div>
+                #parse("/fragments/header.vm")
+            </div>
+
+            <!-- see application.properties -->
+            $body_content
+
+            <div>
+                #parse("/fragments/footer.vm")
+            </div>
+        </div>
+        <script src="/mdb-spring-boot/scripts/scripts.js"></script>
+    </body>
+</html>

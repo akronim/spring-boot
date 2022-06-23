@@ -1,0 +1,40 @@
+#macro(renderAlertMessage $message)
+
+<div id="alert-div" class="alert alert-message-container closed">
+    <div id="alert-msg" class="alert-item"></div>
+    <div class="alert-item alert-item-close">
+        &times;
+    </div>
+</div>
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function (event) {
+        // note: "$!message"
+        messageModule.init("$!message");
+    });
+</script>
+#end
+
+#macro(renderValidationErrors $erros)
+    <div class="validation-errors">
+        #if($!erros && $erros.size() != 0)
+            #foreach($error in $erros)
+                <div style="color:red">
+                    <span>$!{error.getField()} - $!{error.getDefaultMessage()}</span>
+                </div>
+            #end
+        #end
+    </div>
+#end
+
+#macro(renderSuccessErrorMessage)
+    #if ($!{successMessage})
+    <div style="background-color:green;color:white;padding:10px;border-radius: 4px;margin: 5px auto;">
+        <strong>${successMessage}</strong>
+    </div>
+    #end
+    #if ($!{errorMessage})
+    <div style="background-color:red;color:white;padding:10px;border-radius: 4px;margin: 5px auto;">
+        <strong>${errorMessage}</strong>
+    </div>
+    #end
+#end

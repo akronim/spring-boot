@@ -1,0 +1,29 @@
+<div class="view-1-container">
+    #renderAlertMessage()
+    <h1>$!pageTitle</h1>
+    <div>$request.getRequestURI()</div>
+    <button onclick="javascript:messageModule.init('Lorem Ipsum Dolor Sit Amet!')">Show message</button>
+    <button id="btnGetEmployees">Get employees</button>
+
+    <div>
+        <ul id="employeesByDepartment"></ul>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $('#btnGetEmployees').click(function () {
+
+                $.getJSON('/mdb-spring-boot/home/employees-by-department?department=IT', function (data) {
+
+                    $("ul#employeesByDepartment > li").remove();
+
+                    $.each(data, function (key, value) {
+                        $("#employeesByDepartment").append(
+                            '<li>' + value['firstName'] + " " + value['lastName'] + '</li>'
+                        );
+                    });
+                });
+            });
+        });
+    </script>
+</div

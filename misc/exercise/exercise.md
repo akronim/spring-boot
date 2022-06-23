@@ -10,9 +10,10 @@
 ### https://start.spring.io/
 - Select:
     - Project: Maven Project
-    - Language: Java (11)
-    - Spring Boot: version (2.6.6)
+    - Language: Java
+    - Spring Boot: version (2.7.0)
     - Packaging: jar
+    - Java: 11
 
 - Project Metadata:
     - Group: com.example
@@ -99,16 +100,18 @@
 ```
 mvn spring-boot:run
 ```
+### you will see something like
+```
+o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http) 
+
+o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+```
 
 ### installing mongodb
 ```
 https://docs.mongodb.org/manual/core/introduction/
 ```
 
-### inside the project directory create a file employees.json (mongodb database data)
-```json
-
-```
 ### check if employeesdb already exists, and, if yes, drop it
 ```
 mongo
@@ -124,25 +127,31 @@ show dbs
 exit
 ```
 
-### create mongodb database employeesdb (win)
-```
-mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=abs\path\to\mdb-spring-boot\employees.json --jsonArray
-```
-#### (if we need to authenticate first)
-```
-mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=abs\path\to\mdb-spring-boot\employees.json --jsonArray
-```
 
-### check if data imported
+### define application properties - resources\application.properties
 ```
-mongosh mongodb://localhost:27017/employeesdb
-db.version()
-db.employees.find().count()
-db.employees.find().limit(1).pretty()
+### App config
+#### the app will run on port 8102
+server.port=8102 
+spring.application.name=BootMongo
+server.servlet.context-path=/mdb-spring-boot
+
+spring.main.banner-mode=off
+
+### Local MongoDB config
+# spring.data.mongodb.authentication-database=admin
+# spring.data.mongodb.username=rootuser
+# spring.data.mongodb.password=rootpass
+# spring.data.mongodb.database=employeesdb
+# spring.data.mongodb.port=27017
+# spring.data.mongodb.host=localhost
+
+### Local MongoDB config - one-liners
+#### with authentication
+# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
+#### without authentication
+spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
 ```
-#### (if we need to authenticate first)
-```mongosh "mongodb://rootuser:rootpass@localhost:27017/employeesdb?authSource=admin"```
-```mongosh "mongodb://localhost:27017/employeesdb" --username rootuser --password rootpass --authenticationDatabase admin```
 
 
 ### create a package named com.example.mdbspringboot.model and add the class Project.java
@@ -169,7 +178,7 @@ public class Project {
 }
 ```
 
-### create a package named com.example.mdbspringboot.model and add the class Employee.java
+### create a class Employee.java
 ```java
 package com.example.mdbspringboot.model;
 
@@ -192,7 +201,7 @@ public class Employee {
     private String firstName;
     private String lastName;
     // @Indexed(unique = true) => will ensure that email is unique
-    // to enable index, in application.properties we put:
+    // - to enable index, in application.properties we put:
     // spring.data.mongodb.auto-index-creation=true
     @Indexed(unique = true)
     private String email;
@@ -202,9 +211,9 @@ public class Employee {
     @Field("projects_2") // the name of the field in mongodb
     private List<Project> projects2;
     private Double salary;
+    private String mobile;
     @DateTimeFormat(pattern = "dd-MM-yyyy")
     private LocalDateTime createdAt;
-    private String mobile;
 
     public Employee(String firstName, String lastName, String email, String gender, String department,
             List<String> projects, List<Project> projects2, Double salary, String mobile) {
@@ -222,12 +231,20 @@ public class Employee {
 }
 ```
 
+### add to: src\main\resources\application.properties
+```
+# to enable auto-index creation
+spring.data.mongodb.auto-index-creation=true
+```
+
 ### create a package called com.example.mdbspringboot.dto
 ### create a file: dto/EmployeeDTO.java
 ```java
 package com.example.mdbspringboot.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -237,19 +254,21 @@ import lombok.NoArgsConstructor;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
 
+import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.model.Project;
 
 @Data
 @Builder
 @AllArgsConstructor(staticName = "build")
 /*
-@AllArgsConstructor(staticName = "build") => with this we can create new object like this:
-
-EmployeeDTO employeeDTO = EmployeeDTO.build("Alex", "Moore",
-        "alex@moore.com", "Male", "IT",
-        List.of("Project 3", "Project 5", "Project 6"), 6350.0,
-        "123 345 6789");
-*/
+ * @AllArgsConstructor(staticName = "build") => with this we can create new
+ * object like this:
+ * 
+ * EmployeeDTO employeeDTO = EmployeeDTO.build("Alex", "Moore",
+ * "alex@moore.com", "Male", "IT",
+ * List.of("Project 3", "Project 5", "Project 6"), 6350.0,
+ * "123 345 6789");
+ */
 @NoArgsConstructor // empty => default
 public class EmployeeDTO {
     private String id;
@@ -263,9 +282,9 @@ public class EmployeeDTO {
     private String gender;
     @NotBlank
     private String department;
-    @NotEmpty
+    @NotEmpty(message = "projects shouldn't be empty")
     private List<String> projects;
-    @NotEmpty
+    @NotEmpty(message = "projects2 shouldn't be empty")
     @Valid // to include validations that are present in Project class
     private List<Project> projects2;
     @Min(2500)
@@ -278,20 +297,36 @@ public class EmployeeDTO {
     private LocalDateTime created;
 
     public static EmployeeDTO toEmployeeDTO(Employee employee) {
-    return EmployeeDTO.builder()
-        .id(employee.getId())
-        .firstName(employee.getFirstName())
-        .lastName(employee.getLastName())
-        .email(employee.getEmail())
-        .gender(employee.getGender())
-        .department(employee.getDepartment())
-        .projects(employee.getProjects())
-        .projects2(employee.getProjects2())
-        .salary(employee.getSalary())
-        .mobile(employee.getMobile())
-        .created(employee.getCreatedAt())
-        .build();
-}
+        return EmployeeDTO.builder()
+                .id(employee.getId())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .email(employee.getEmail())
+                .gender(employee.getGender())
+                .department(employee.getDepartment())
+                .projects(employee.getProjects())
+                .projects2(employee.getProjects2())
+                .salary(employee.getSalary())
+                .mobile(employee.getMobile())
+                .created(employee.getCreatedAt())
+                .build();
+    }
+
+    public static Employee fromEmployeeDTO(EmployeeDTO employeeDTO) {
+        return Employee.builder()
+                .id(Objects.nonNull(employeeDTO.getId()) ? employeeDTO.getId() : null)
+                .firstName(employeeDTO.getFirstName())
+                .lastName(employeeDTO.getLastName())
+                .email(employeeDTO.getEmail())
+                .gender(employeeDTO.getGender())
+                .department(employeeDTO.getDepartment())
+                .projects(employeeDTO.getProjects())
+                .projects2(employeeDTO.getProjects2())
+                .salary(employeeDTO.getSalary())
+                .mobile(employeeDTO.getMobile())
+                .createdAt(employeeDTO.getCreated())
+                .build();
+    }
 }
 ```
 
@@ -310,33 +345,14 @@ public interface EmployeeRepository extends MongoRepository<Employee, String> {
     
 }
 
-// to get the JSON converter to ignore null values - add this to the application.properties file:
+// to get JSON converter to ignore null values => 
+// - add this to the application.properties file:
 // spring.jackson.default-property-inclusion=non-null
 ```
 
-### define application properties - resources\application.properties
+### add to: src\main\resources\application.properties
 ```
-### Local MongoDB config
-# spring.data.mongodb.authentication-database=admin
-# spring.data.mongodb.username=rootuser
-# spring.data.mongodb.password=rootpass
-# spring.data.mongodb.database=employeesdb
-# spring.data.mongodb.port=27017
-# spring.data.mongodb.host=localhost
-
-### Local MongoDB config - one-liners
-# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
-spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
-
-spring.data.mongodb.auto-index-creation=true
-
-### App config
-#### the app will run on port 8102
-server.port=8102 
-spring.application.name=BootMongo
-server.servlet.context-path=/mdb-spring-boot
-
-### to get the JSON converter to ignore null values
+# to get JSON converter to ignore null values
 spring.jackson.default-property-inclusion=non-null
 ```
 
@@ -348,6 +364,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.List;
+
 import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.model.Project;
 import com.example.mdbspringboot.repository.EmployeeRepository;
@@ -362,7 +379,7 @@ public class MdbSpringBootApplication {
 		SpringApplication.run(MdbSpringBootApplication.class, args);
 	}
 
-    // db.employees.deleteOne( { "email" : "john@smith.com" } );
+	// db.employees.deleteOne( { "email" : "john@smith.com" } );
 
 	@Bean
 	CommandLineRunner runner(EmployeeRepository repository, MongoTemplate mongoTemplate) {
@@ -375,7 +392,7 @@ public class MdbSpringBootApplication {
 							Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()),
 					5500.0, "123 345 6789");
 
-			repository.findEmployeeByEmail(email).ifPresentOrElse(s -> {
+			repository.findAll().stream().filter(e -> e.getEmail().equals(email)).findFirst().ifPresentOrElse(s -> {
 				System.out.println("\n>>>>>> " + s + " already exists");
 			}, () -> {
 				System.out.println("\n>>>>>> Inserting employee " + employee);
@@ -384,6 +401,17 @@ public class MdbSpringBootApplication {
 		};
 	}
 }
+```
+
+### check if data inserted
+```
+mongosh
+show dbs
+use employeesdb
+show collections
+db.employees.find().count()
+db.employees.find().pretty()
+exit
 ```
 
 ### MdbSpringBootApplication - another way
@@ -404,13 +432,13 @@ import org.springframework.boot.CommandLineRunner;
 public class MdbSpringBootApplication implements CommandLineRunner {
 
 	@Autowired
-	private EmployeeRepository employeeRepository;
+	private EmployeeRepository repository;
 
 	public static void main(String[] args) {
 		SpringApplication.run(MdbSpringBootApplication.class, args);
 	}
 
-    // db.employees.deleteOne( { "email" : "john@smith.com" } );
+	// db.employees.deleteOne( { "email" : "john@smith.com" } );
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -422,15 +450,80 @@ public class MdbSpringBootApplication implements CommandLineRunner {
 						Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()),
 				5500.0, "123 345 6789");
 
-		employeeRepository.findEmployeeByEmail(email).ifPresentOrElse(s -> {
+		repository.findAll().stream().filter(e -> e.getEmail().equals(email)).findFirst().ifPresentOrElse(s -> {
 			System.out.println("\n>>>>>> " + s + " already exists");
 		}, () -> {
 			System.out.println("\n>>>>>> Inserting employee " + employee);
-			employeeRepository.insert(employee);
+			repository.insert(employee);
 		});
 	}
 }
 ```
+
+### Employee.java
+#### remove the existing constructor
+#### add @Builder annotation to the Employee class
+#### (for that you also need to add: @NoArgsConstructor and @AllArgsConstructor annotations)
+```java
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
+@Builder // now we can create Employee instances using builder API: Employee.builder().firstName("Alex").build()
+@AllArgsConstructor
+@NoArgsConstructor
+public class Employee { /* remove the existing constructor */ }
+```
+
+### MdbSpringBootApplication - initialize Employee this way
+```java
+import java.time.LocalDateTime;
+
+// ...
+
+String email = "john@smith.com";
+
+Employee employee = Employee.builder()
+        .firstName("John")
+        .lastName("Smith")
+        .email(email)
+        .gender("Male")
+        .department("Finance")
+        .projects(List.of("Project 3", "Project 5", "Project 6"))
+        .projects2(List.of(
+                Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()))
+        .salary(5500.0)
+        .mobile("123 345 6789")
+        .createdAt(LocalDateTime.now())
+        .build();
+```
+
+### inside the project directory create a file employees.json (mongodb database data)
+```json
+
+```
+
+### create and import data into mongodb database employeesdb (win)
+```
+mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=abs\path\to\mdb-spring-boot\employees.json --jsonArray
+```
+#### (if we need to authenticate first)
+```
+mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=abs\path\to\mdb-spring-boot\employees.json --jsonArray
+```
+
+### check if data imported
+```
+mongosh mongodb://localhost:27017/employeesdb
+db.version()
+db.employees.find().count()
+db.employees.find().limit(1).pretty()
+```
+#### (if we need to authenticate first)
+```mongosh "mongodb://rootuser:rootpass@localhost:27017/employeesdb?authSource=admin"```
+```mongosh "mongodb://localhost:27017/employeesdb" --username rootuser --password rootpass --authenticationDatabase admin```
+
 
 ### create a package called com.example.mdbspringboot.services
 
@@ -444,17 +537,13 @@ import com.example.mdbspringboot.dto.EmployeeDTO;
 import com.example.mdbspringboot.model.Employee;
 
 public interface EmployeeService {
-    List<Employee> getAllEmployees();
+    List<Employee> getAll();
 
     Employee getById(String employeeId);
 
-    Employee addEmployee(EmployeeDTO employee);
+    Employee create(EmployeeDTO employee);
 
-    List<Employee> addEmployees(List<Employee> employees);
-
-    Employee update(Employee employee);
-
-    Employee patch(Employee employeeUpdateRequest);
+    Employee update(EmployeeDTO employee);
 
     void delete(String id);
 }
@@ -464,8 +553,8 @@ public interface EmployeeService {
 ```java
 package com.example.mdbspringboot.services;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import com.example.mdbspringboot.dto.EmployeeDTO;
 import com.example.mdbspringboot.model.Employee;
@@ -486,7 +575,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         this.employeeRepository = employeeRepository;
     }
 
-    public List<Employee> getAllEmployees() {
+    public List<Employee> getAll() {
         return employeeRepository.findAll();
     }
 
@@ -494,60 +583,649 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepository.findById(employeeId).orElse(null);
     }
 
-    public Employee addEmployee(EmployeeDTO employeeRequest) {
-
-        Employee employee = new Employee(
-                employeeRequest.getFirstName(),
-                employeeRequest.getLastName(),
-                employeeRequest.getEmail(),
-                employeeRequest.getGender(),
-                employeeRequest.getDepartment(),
-                employeeRequest.getProjects(),
-                employeeRequest.getProjects2(),
-                employeeRequest.getSalary(),
-                employeeRequest.getMobile());
-
-        return employeeRepository.insert(employee);
+    public Employee create(EmployeeDTO employeeDTO) {
+        Employee employee = EmployeeDTO.fromEmployeeDTO(employeeDTO);
+        employee.setCreatedAt(LocalDateTime.now());
+        return employeeRepository.save(employee);
     }
 
-    public List<Employee> addEmployees(List<Employee> employees) {
-        return employeeRepository.saveAll(employees);
-    }
-
-    public Employee update(Employee employee) {
-        if (employeeRepository.existsById(employee.getId())) {
+    public Employee update(EmployeeDTO employeeDTO) {
+        if (employeeRepository.existsById(employeeDTO.getId())) {
+            Employee employee = EmployeeDTO.fromEmployeeDTO(employeeDTO);
             return employeeRepository.save(employee);
         }
-        return employee;
-    }
-
-    public Employee patch(Employee employeeUpdateRequest) {
-        if (employeeRepository.existsById(employeeUpdateRequest.getId())) {
-            Optional<Employee> optionalEmployee = employeeRepository.findById(employeeUpdateRequest.getId());
-
-            Employee employee = optionalEmployee.get();
-
-            employee.setFirstName(employeeUpdateRequest.getFirstName());
-            employee.setLastName(employeeUpdateRequest.getLastName());
-            employee.setEmail(employeeUpdateRequest.getEmail());
-            employee.setGender(employeeUpdateRequest.getGender());
-            employee.setDepartment(employeeUpdateRequest.getDepartment());
-            employee.setSalary(employeeUpdateRequest.getSalary());
-            employee.setProjects(employeeUpdateRequest.getProjects());
-            employee.setProjects2(employeeUpdateRequest.getProjects2());
-
-            return employeeRepository.save(employee);
-        }
-
-        return employeeUpdateRequest;
+        return null;
     }
 
     public void delete(String id) {
-        employeeRepository.deleteById(id);
+        if (Objects.nonNull(id) && !id.isBlank()) {
+            employeeRepository.deleteById(id);
+        }
     }
 }
 ```
 
+
+### create a package called com.example.mdbspringboot.controllers
+
+### create a controller EmployeeController.java
+```java
+package com.example.mdbspringboot.controllers;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.services.EmployeeService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@RestController
+@RequestMapping("api/v1/employees")
+public class EmployeeController {
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    private final EmployeeService employeeService;
+
+    public EmployeeController(EmployeeService employeeService) {
+        this.employeeService = employeeService;
+    }
+
+    // http://localhost:8102/mdb-spring-boot/api/v1/employees/
+    @GetMapping("/")
+    public List<Employee> getAllEmployees() {
+        LOG.info("\n>>>>> Getting all employees.\n");
+        return employeeService.getAll();
+    }
+}
+```
+
+
+### create: src\main\java\com\example\mdbspringboot\services\EmployeeServiceImplV2.java
+```java
+package com.example.mdbspringboot.services;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.example.mdbspringboot.dto.EmployeeDTO;
+import com.example.mdbspringboot.model.Employee;
+
+@Service
+public class EmployeeServiceImplV2 implements EmployeeService {
+
+    @Override
+    public List<Employee> getAll() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Employee getById(String employeeId) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Employee create(EmployeeDTO employee) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Employee update(EmployeeDTO employee) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void delete(String id) {
+        // TODO Auto-generated method stub
+        
+    }
+}
+```
+
+
+### EmployeeController - in case of multiple service implementations you have to specify which one to use
+```java
+import org.springframework.beans.factory.annotation.Qualifier; // new code
+
+// ...
+
+    @Autowired
+    @Qualifier("employeeServiceImpl") // new code
+    EmployeeService employeeService;
+```
+
+### EmployeeServiceImpl - add class annotation that says this is primary implementation
+```java
+import org.springframework.context.annotation.Primary;
+
+// ...
+
+@Service
+@Primary // new code
+public class EmployeeServiceImpl implements EmployeeService
+```
+
+### EmployeeController - remove @Qualifier("employeeServiceImpl") annotation
+
+### testing
+https://mkyong.com/spring-boot/spring-rest-integration-test-example/
+https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-writing-assertions-with-junit-5-api/
+https://github.com/pkainulainen/junit5-examples/tree/master/unit-tests/writing-assertions/junit5-api
+https://reflectoring.io/spring-boot-test/
+https://www.baeldung.com/spring-boot-testing
+
+### mock vs spy
+```java
+/*
+ * @MockBean //or Mockito's @Mock
+ * - it mocks the object and all its methods with do nothing and their result
+ * value will be null,
+ * - use for example: when(...) methods to create mocked method behaviour
+ * - use when you want to completely get rid of the object's normal behaviour
+ * 
+ * 
+ * @SpyBean //or Mockito's @Spy
+ * - an object will behave like an @Autowired object
+ * - all its methods will actually works, but we can define some custom behavior
+ * for its methods
+ * - use doReturn(...) / doNothing(...) to add custom (mocked) method behaviour
+ * - use if you want to provide your mock behaviour but not dismiss entirely its
+ * normal behaviour
+ * - the spy object is a wrapper around an actual object of a class
+ */
+
+// source: https://javapointers.com/tutorial/difference-between-spy-and-mock-in
+```
+
+### pom.xml: add this dependency
+```xml
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>5.7.0</version>
+    <scope>test</scope>
+</dependency>
+```
+
+### src/test/java/com/example/mdbspringboot/MdbSpringBootApplicationTests.java
+```java
+package com.example.mdbspringboot;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class MdbSpringBootApplicationTests {
+
+	// object underTest
+	Calculator calculator = new Calculator();
+
+	@Test
+	void itShouldAddTwoNumbers() {
+		// given
+		int numberOne = 20;
+		int numberTwo = 30;
+
+		// when
+		int result = calculator.add(numberOne, numberTwo);
+
+		// then
+		int expected = 50;
+		assertEquals(expected, result);
+	}
+
+	class Calculator {
+		int add(int a, int b) {
+			return a + b;
+		}
+	}
+}
+```
+
+### run unit tests with maven
+```
+mvn clean test   
+```
+
+### create src\test\java\com\example\mdbspringboot\services\EmployeeServiceTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.util.CollectionUtils;
+
+// we do not mock EmployeeRepository here
+
+@SpringBootTest
+class EmployeeServiceTest {
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @DisplayName("getAll 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void getAll_x1() {
+
+        List<Employee> employees = employeeService.getAll();
+
+        assertFalse(CollectionUtils.isEmpty(employees));
+
+        LOG.info("\n\n>>>>> employees count: {}\n", employees.size());
+    }
+}
+```
+
+### search: maven repository de.flapdoodle.embed.mongo
+https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo
+
+### pom.xml
+```xml
+<dependency>
+    <groupId>de.flapdoodle.embed</groupId>
+    <artifactId>de.flapdoodle.embed.mongo</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
+### create src\test\resources\application-test.properties
+```
+# test db (embedded mongodb) will be used
+# specified version will be automatically downloaded - for available versions see:
+# https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo
+spring.mongodb.embedded.version=3.4.6
+```
+### create src\test\resources\application-it.properties
+```
+# excluding embedded mongodb (and using "real" db) 
+spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration
+```
+
+### src\test\java\com\example\mdbspringboot\MdbSpringBootApplicationTests.java - add class annotation
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceTest.java - add class annotation
+```java
+import org.springframework.test.context.ActiveProfiles;
+
+// @SpringBootTest
+@SpringBootTest
+@ActiveProfiles("it")
+```
+
+### src\test\java\com\example\mdbspringboot\services\EmployeeServiceMockTest.java
+```java
+package com.example.mdbspringboot.services;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import com.example.mdbspringboot.dto.EmployeeDTO;
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.model.Project;
+import com.example.mdbspringboot.repository.EmployeeRepository;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+// we mock EmployeeRepository here
+
+@SpringBootTest
+@ActiveProfiles("it")
+class EmployeeServiceMockTest {
+
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    // Spring Boot's Annotation (different from Mockito's @Mock Annotation)
+    // The mock will replace any existing bean of the same type in the application context
+    @MockBean
+    private EmployeeRepository employeeRepository;
+
+    private Employee emp1;
+    private Employee emp2;
+    private Employee emp3;
+    List<Employee> employees;
+
+    @BeforeEach
+    void setUp() {
+
+        emp1 = Employee.builder()
+                .id("alex123")
+                .firstName("Alex")
+                .lastName("Moore")
+                .email("alex@moore.com")
+                .gender("Male")
+                .department("IT")
+                .projects(List.of("Project 3", "Project 5", "Project 6"))
+                .projects2(List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 3").description("3 Lorem ipsum dolor sit amet").build()))
+                .salary(6350.0)
+                .mobile("123 345 6789")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        emp2 = Employee.builder()
+                .id("ingrid321")
+                .firstName("Ingrid")
+                .lastName("French")
+                .email("ingrid@french.com")
+                .gender("Female")
+                .department("Production")
+                .projects(List.of("Project 2", "Project 3", "Project 4"))
+                .projects2(List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()))
+                .salary(4450.0)
+                .mobile("223 345 7789")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        emp3 = Employee.builder()
+                .id("austin423")
+                .firstName("Austin")
+                .lastName("Walker")
+                .email("austin@walker.com")
+                .gender("Male")
+                .department("HR")
+                .projects(List.of("Project 1", "Project 3", "Project 6"))
+                .projects2(List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 3").description("3 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 4").description("4 Lorem ipsum dolor sit amet").build()))
+                .salary(5150.0)
+                .mobile("723 545 8789")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        employees = List.of(emp1, emp2, emp3);
+    }
+
+    @DisplayName("getAll 1 | GIVEN ... SHOULD ...")
+    @Test
+    void getAll_x1() {
+        when(employeeRepository.findAll()).thenReturn(employees);
+
+        List<Employee> employees = employeeService.getAll();
+
+        LOG.info("\n\n>>>>> employees: {}\n", employees);
+
+        assertFalse(CollectionUtils.isEmpty(employees));
+        assertEquals(3, employees.size());
+    }
+
+    @DisplayName("getById 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void getById_x1() {
+        String employeeId = "alex123";
+
+        when(employeeRepository.findById(employeeId)).thenReturn(Optional.of(emp1));
+
+        Employee employee = employeeService.getById(employeeId);
+
+        assertTrue(Objects.nonNull(employee));
+        assertEquals(employeeId, employee.getId());
+        assertTrue(employee.getFirstName().equals("Alex"));
+        assertEquals(3, employee.getProjects2().size());
+    }
+
+    @DisplayName("create 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void create_x1() {
+        // Mockito uses the equals for argument matching, try using ArgumentMatchers.any
+        // for the save / insert method
+        when(employeeRepository.save(any(Employee.class))).thenReturn(emp1);
+
+        Employee savedEmployee = employeeService.create(new EmployeeDTO());
+
+        assertNotNull(savedEmployee);
+        assertEquals(emp1.getId(), savedEmployee.getId());
+    }
+
+    @DisplayName("update 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void update_x1() {
+        // Mockito uses the equals for argument matching, try using ArgumentMatchers.any
+        // for the save / insert method
+        when(employeeRepository.save(any(Employee.class))).thenReturn(emp1);
+
+        when(employeeRepository.existsById(any(String.class))).thenReturn(true);
+
+        Employee updatedEmployee = employeeService.update(EmployeeDTO.toEmployeeDTO(emp1));
+
+        assertNotNull(updatedEmployee);
+        assertEquals(emp1.getId(), updatedEmployee.getId());
+    }
+
+    @DisplayName("delete 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void delete_x1() {
+        ArgumentCaptor<String> valueCapture = ArgumentCaptor.forClass(String.class);
+
+        doNothing().when(employeeRepository).deleteById(valueCapture.capture());
+
+        employeeService.delete("foo123");
+
+        assertEquals("foo123", valueCapture.getValue());
+    }
+}
+```
+
+### create src\test\java\com\example\mdbspringboot\repository\EmployeeRepositoryTest.java
+```java
+package com.example.mdbspringboot.repository;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.model.Project;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@ExtendWith(SpringExtension.class)
+@DataMongoTest
+@ActiveProfiles("test")
+public class EmployeeRepositoryTest {
+    private final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    private Employee emp1;
+    private Employee emp2;
+    private Employee emp3;
+    List<Employee> employees;
+
+    @BeforeEach
+    void setUp() {
+
+        employeeRepository.deleteAll();
+
+        emp1 = Employee.builder()
+                .id("alex123")
+                .firstName("Alex")
+                .lastName("Moore")
+                .email("alex@moore.com")
+                .gender("Male")
+                .department("IT")
+                .projects(List.of("Project 3", "Project 5", "Project 6"))
+                .projects2(List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 3").description("3 Lorem ipsum dolor sit amet").build()))
+                .salary(6350.0)
+                .mobile("123 345 6789")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        emp2 = Employee.builder()
+                .id("ingrid321")
+                .firstName("Ingrid")
+                .lastName("French")
+                .email("ingrid@french.com")
+                .gender("Female")
+                .department("Production")
+                .projects(List.of("Project 2", "Project 3"))
+                .projects2(List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()))
+                .salary(4450.0)
+                .mobile("223 345 7789")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        emp3 = Employee.builder()
+                .firstName("Austin")
+                .lastName("Walker")
+                .email("austin@walker.com")
+                .gender("Male")
+                .department("HR")
+                .projects(List.of("Project 1"))
+                .projects2(List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 3").description("3 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 4").description("4 Lorem ipsum dolor sit amet").build()))
+                .salary(5150.0)
+                .mobile("723 545 8789")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        employees = List.of(emp1, emp2);
+
+        employeeRepository.saveAll(employees);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        employeeRepository.deleteAll();
+    }
+
+    @DisplayName("findAll 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void findAll_x1() {
+        List<Employee> employees = employeeRepository.findAll();
+
+        LOG.info("\n\n>>>>> employees: {}\n", employees);
+
+        assertFalse(CollectionUtils.isEmpty(employees));
+
+        assertEquals(2, employees.size());
+
+        assertTrue(employees.stream().anyMatch(x -> x.getFirstName().equals("Alex") && x.getProjects2().size() == 3));
+    }
+
+    @DisplayName("findById 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void findById_x1() {
+        String employeeId = "alex123";
+
+        Employee employee = employeeRepository.findById(employeeId).orElse(null);
+
+        assertTrue(Objects.nonNull(employee));
+        assertEquals(employeeId, employee.getId());
+        assertTrue(employee.getFirstName().equals("Alex"));
+        assertEquals(3, employee.getProjects2().size());
+    }
+
+    @DisplayName("create 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void create_x1() {
+        assertFalse(employeeRepository.findAll().stream().anyMatch(p -> p.getEmail().equals(emp3.getEmail())));
+
+        Employee savedEmployee = employeeRepository.save(emp3);
+
+        assertNotNull(savedEmployee);
+        assertEquals(emp3.getEmail(), savedEmployee.getEmail());
+
+        assertTrue(employeeRepository.findAll().stream().anyMatch(p -> p.getEmail().equals(emp3.getEmail())));
+    }
+
+    @DisplayName("update 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void update_x1() {
+        assertTrue(employeeRepository.existsById(emp1.getId()));
+
+        emp1.setDepartment("foobar");
+
+        Employee updatedEmployee = employeeRepository.save(emp1);
+
+        assertNotNull(updatedEmployee);
+        assertEquals("foobar", updatedEmployee.getDepartment());
+    }
+
+    @DisplayName("delete 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void delete_x1() {
+        assertTrue(employeeRepository.existsById(emp1.getId()));
+
+        employeeRepository.deleteById(emp1.getId());
+
+        assertFalse(employeeRepository.existsById(emp1.getId()));
+    }
+}
+```
 
 ### EmployeeRepository - new methods
 ```java
@@ -641,416 +1319,118 @@ public List<Employee> getAllBySalaryGTE(int salary) {
 }
 ```
 
-
-
-
-
-
-
-
-
-### testing
-https://mkyong.com/spring-boot/spring-rest-integration-test-example/
-https://www.petrikainulainen.net/programming/testing/junit-5-tutorial-writing-assertions-with-junit-5-api/
-https://github.com/pkainulainen/junit5-examples/tree/master/unit-tests/writing-assertions/junit5-api
-
-### mock vs spy
+### EmployeeServiceTest.java
 ```java
-/*
- * @MockBean //or Mockito's @Mock
- * - it mocks the object and all its methods with do nothing and their result
- * value will be null,
- * - use for example: when(...) methods to create mocked method behaviour
- * - use when you want to completely get rid of the object's normal behaviour
- * 
- * 
- * @SpyBean //or Mockito's @Spy
- * - an object will behave like an @Autowired object
- * - all its methods will actually works, but we can define some custom behavior
- * for its methods
- * - use doReturn(...) / doNothing(...) to add custom (mocked) method behaviour
- * - use if you want to provide your mock behaviour but not dismiss entirely its
- * normal behaviour
- * - the spy object is a wrapper around an actual object of a class
- */
-
-// source: https://javapointers.com/tutorial/difference-between-spy-and-mock-in
-```
-
-### pom.xml: add this dependency
-```xml
-<dependency>
-    <groupId>org.junit.jupiter</groupId>
-    <artifactId>junit-jupiter</artifactId>
-    <version>5.7.0</version>
-    <scope>test</scope>
-</dependency>
-```
-
-### src/test/java/com/example/mdbspringboot/MdbSpringBootApplicationTests.java
-```java
-package com.example.mdbspringboot;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class MdbSpringBootApplicationTests {
-
-	// object underTest
-	Calculator calculator = new Calculator();
-
-	@Test
-	void itShouldAddTwoNumbers() {
-		// given
-		int numberOne = 20;
-		int numberTwo = 30;
-
-		// when
-		int result = calculator.add(numberOne, numberTwo);
-
-		// then
-		int expected = 50;
-		assertEquals(expected, result);
-	}
-
-	class Calculator {
-		int add(int a, int b) {
-			return a + b;
-		}
-	}
-}
-```
-
-### run unit tests with maven
-```
-mvn clean test   
-```
-
-
-### Employee.java
-#### add @Builder, @NoArgsConstructor and @AllArgsConstructor annotations to the Employee class
-#### add @Builder.Default to the createdAt field
-```java
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-
-@Builder // now we can create Employee instances using builder API: Employee.builder().firstName("Alex").build()
-@NoArgsConstructor
-@AllArgsConstructor
-public class Employee { /* ... */ }
-```
-
-### create src\test\java\com\example\mdbspringboot\services\EmployeeServiceTest.java
-```java
-package com.example.mdbspringboot.services;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
-import java.util.Objects;
+// ...
 
-import com.example.mdbspringboot.model.Employee;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+@DisplayName("getAllByFirstNameStartingWith 1 | GIVEN ... SHOULD ...")
+@Test
+void getAllByFirstNameStartingWith_x1() {
+    String firstName = "Al";
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+    List<Employee> employees = employeeService.getAllByFirstNameStartingWith(firstName);
 
-import org.springframework.util.CollectionUtils;
+    assertFalse(CollectionUtils.isEmpty(employees));
 
-// we do not mock EmployeeRepository here
-
-@SpringBootTest
-class EmployeeServiceTest {
-    private final Logger LOG = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    private EmployeeService employeeService;
-
-    @DisplayName("getAllEmployees 1 | GIVEN ...  SHOULD ...")
-    @Test
-    void getAllEmployees_x1() {
-
-        List<Employee> employees = employeeService.getAllEmployees();
-
-        assertTrue(Objects.nonNull(employees));
-
-        LOG.info("\n\n>>>>> employees count: {}\n", employees.size());
-    }
-
-    @DisplayName("getAllByFirstNameStartingWith 1 | GIVEN ... SHOULD ...")
-    @Test
-    void getAllByFirstNameStartingWith_x1() {
-        String firstName = "Al";
-
-        List<Employee> employees = employeeService.getAllByFirstNameStartingWith(firstName);
-
-        assertFalse(CollectionUtils.isEmpty(employees));
-
-        employees.forEach(x -> {
-            assertTrue(x.getFirstName().startsWith(firstName));
-        });
-    }
+    employees.forEach(x -> {
+        assertTrue(x.getFirstName().startsWith(firstName));
+    });
 }
 ```
 
-### search: maven repository de.flapdoodle.embed.mongo
-https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo
-
-### pom.xml
-```xml
-<dependency>
-    <groupId>de.flapdoodle.embed</groupId>
-    <artifactId>de.flapdoodle.embed.mongo</artifactId>
-    <scope>test</scope>
-</dependency>
-```
-
-### create src\test\resources\application-test.properties
-```
-# test db (embedded mongodb) will be used
-# specified version will be automatically downloaded - for available versions see:
-# https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo
-spring.mongodb.embedded.version=3.4.6
-```
-### create src\test\resources\application-it.properties
-```
-# excluding embedded mongodb (and using "real" db) 
-spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration
-```
-
-### src\test\java\com\example\mdbspringboot\MdbSpringBootApplicationTests.java - add class annotation
-### src\test\java\com\example\mdbspringboot\services\EmployeeServiceTest.java - add class annotation
-```java
-import org.springframework.test.context.ActiveProfiles;
-
-// @SpringBootTest
-@SpringBootTest
-@ActiveProfiles("it")
-```
-
-### create src\test\java\com\example\mdbspringboot\repository\EmployeeRepositoryTest.java
+### create another interface: src\main\java\com\example\mdbspringboot\repository\CustomEmployeeRepositoryTwo.java
 ```java
 package com.example.mdbspringboot.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import java.util.List;
+
+import com.example.mdbspringboot.model.Employee;
+
+public interface CustomEmployeeRepositoryTwo {
+    List<Employee> findAll();
+
+    void saveAll(final List<Employee> employees);
+
+    Employee findById(final String employeeId);
+
+    String getEmployeesCount(String inputArg);
+}
+```
+
+### create the interface implementation: src\main\java\com\example\mdbspringboot\repository\CustomEmployeeRepositoryTwoImpl.java
+```java
+package com.example.mdbspringboot.repository;
 
 import java.util.List;
 
 import com.example.mdbspringboot.model.Employee;
-import com.example.mdbspringboot.model.Project;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.util.CollectionUtils;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.stereotype.Repository;
+
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Criteria;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ExtendWith(SpringExtension.class)
-@DataMongoTest
-@ActiveProfiles("test")
-public class EmployeeRepositoryTest {
-    private final Logger LOG = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    Employee employee = null;
-
-    @BeforeEach
-    public void dataSetup() {
-        employee = Employee.builder()
-                .firstName("Alex")
-                .lastName("Moore")
-                .email("alex@moore.com")
-                .gender("Male")
-                .department("IT")
-                .projects(List.of("Project 3", "Project 5", "Project 6"))
-                .projects2(List.of(
-                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
-                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()))
-                .salary(6350.0)
-                .mobile("123 345 6789")
-                .build();
-
-        employeeRepository.save(employee);
-    }
-
-    @AfterEach
-    public void tearDown() {
-        employeeRepository.delete(employee);
-    }
-
-    @DisplayName("findAll 1 | GIVEN ...  SHOULD ...")
-    @Test
-    void findAll_x1() {
-
-        List<Employee> employees = employeeRepository.findAll();
-
-        LOG.info("\n\n>>>>> employees: {}\n", employees);
-
-        assertFalse(CollectionUtils.isEmpty(employees));
-
-        assertEquals(2, employees.size());
-
-        assertTrue(employees.stream().anyMatch(x -> x.getFirstName().equals("Alex") && x.getProjects2().size() == 2));
-    }
-
-    @DisplayName("findByFirstNameStartingWith 1 | GIVEN ...  SHOULD ...")
-    @Test
-    void findByFirstNameStartingWith_x1() {
-
-        String firstName = "Al";
-
-        List<Employee> employees = employeeRepository.findByFirstNameStartingWith(firstName);
-
-        assertFalse(CollectionUtils.isEmpty(employees));
-
-        employees.forEach(x -> {
-            assertTrue(x.getFirstName().startsWith(firstName));
-        });
-    }
-}
-```
-
-
-
-
-### src\test\java\com\example\mdbspringboot\services\EmployeeServiceMockTest.java
-```java
-package com.example.mdbspringboot.services;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
-
-import com.example.mdbspringboot.model.Employee;
-import com.example.mdbspringboot.model.Project;
-import com.example.mdbspringboot.repository.EmployeeRepository;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-// we mock EmployeeRepository here
-
-@SpringBootTest
-@ActiveProfiles("it")
-class EmployeeServiceMockTest {
+@Repository
+public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepositoryTwo {
 
     private final Logger LOG = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private EmployeeService employeeService;
+    private MongoTemplate mongoTemplate;
 
-    // Spring Boot's Annotation (different from Mockito's @Mock Annotation)
-    // The mock will replace any existing bean of the same type in the application context
-    @MockBean
-    private EmployeeRepository employeeRepository;
-
-    @BeforeEach
-    void setUp() {
-        Employee employee = Employee.builder()
-                .firstName("Alex")
-                .lastName("Moore")
-                .email("alex@moore.com")
-                .gender("Male")
-                .department("IT")
-                .projects(List.of("Project 3", "Project 5", "Project 6"))
-                .projects2(List.of(
-                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
-                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()))
-                .salary(6350.0)
-                .mobile("123 345 6789")
-                .build();
-
-        Mockito.when(employeeRepository.findAll()).thenReturn(List.of(employee));
-        Mockito.when(employeeRepository.findByFirstNameStartingWith("Al"))
-                .thenReturn(List.of(employee));
+    public List<Employee> findAll() {
+        return mongoTemplate.findAll(Employee.class);
     }
 
-    @DisplayName("getAllEmployees 1 | GIVEN ... SHOULD ...")
-    @Test
-    void getAllEmployees_x1() {
-        List<Employee> employees = employeeService.getAllEmployees();
-
-        LOG.info("\n\n>>>>> employees: {}\n", employees);
-
-        assertFalse(CollectionUtils.isEmpty(employees));
-
-        assertEquals(1, employees.size());
-
-        assertTrue(employees.get(0).getFirstName().equals("Alex"));
-
-        assertEquals(2, employees.get(0).getProjects2().size());
+    public void saveAll(final List<Employee> employees) {
+        mongoTemplate.insertAll(employees);
     }
 
-    @DisplayName("getAllByFirstNameStartingWith 1 | GIVEN ... SHOULD ...")
-    @Test
-    void getAllByFirstNameStartingWith_x1() {
-        String firstName = "Al";
+    public Employee findById(final String employeeId) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("id").is(employeeId));
+        
+		return mongoTemplate.findOne(query, Employee.class);
+    }
 
-        List<Employee> employees = employeeService.getAllByFirstNameStartingWith(firstName);
+    @Override
+    public String getEmployeesCount(String inputArg) {
+        var employeesCount = mongoTemplate.findAll(Employee.class).size();
+        var resultMessage = "REPOSITORY - " + inputArg + " | COUNT: " + employeesCount;
 
-        assertFalse(CollectionUtils.isEmpty(employees));
+        LOG.info("\n\n>>>>> CustomEmployeeRepositoryTwoImpl \n");
+        LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
 
-        employees.forEach(x -> {
-            assertTrue(x.getFirstName().startsWith(firstName));
-        });
+        return resultMessage;
     }
 }
 ```
 
-
-
-
-
-
-### CustomEmployeeRepositoryTwo.java
+### EmployeeServiceImpl.java
+#### importing CustomEmployeeRepositoryTwo
 ```java
-String getEmployeesCount(String inputArg);
+import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
+```
+#### handle CustomEmployeeRepositoryTwo DI
+```java
+@Autowired
+CustomEmployeeRepositoryTwo customEmployeeRepositoryTwo;
 ```
 
-### CustomEmployeeRepositoryTwoImpl.java
-```java
-@Override
-public String getEmployeesCount(String inputArg) {
-    var employeesCount = mongoTemplate.findAll(Employee.class).size();
-    var resultMessage = "REPOSITORY - " + inputArg + " | COUNT: " + employeesCount;
-
-    LOG.info("\n\n>>>>> CustomEmployeeRepositoryTwoImpl \n");
-    LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
-
-    return resultMessage;
-}
-```
 
 ### EmployeeService.java
 ```java
 String getEmployeesCount(String inputArg);
+
+// here we are using MongoTemplate based repository
+Employee findById(String id);
 ```
 
 
@@ -1064,6 +1444,11 @@ public String getEmployeesCount(String inputArg) {
     LOG.info("\n\n>>>>> getEmployeesCount: {}\n", resultMessage);
     
     return resultMessage;
+}
+
+// here we are using MongoTemplate based repository
+public Employee findById(String id) {
+    return customEmployeeRepositoryTwo.findById(id);
 }
 ```
 
@@ -1148,8 +1533,6 @@ public class EmployeeServiceSpyTest {
     }
 }
 ```
-
-
 
 ### how to test private methods
 ### EmployeeServiceImpl.java
@@ -1252,21 +1635,6 @@ public class EmployeeServiceArgumentCaptureTest {
 }
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### throw an exception if an employee not found 
 ### create a package called com.example.mdbspringboot.exception
 ### create a file: exception\EmployeeNotFoundException.java
@@ -1279,15 +1647,18 @@ public class EmployeeNotFoundException extends Exception {
     }
 }
 ```
-### EmployeeService - change getById method signature
+### EmployeeService - change getById and findById methods signature
 ```java
 import com.example.mdbspringboot.exception.EmployeeNotFoundException;
 
 // ...
 
 Employee getById(String employeeId) throws EmployeeNotFoundException;
+
+// here we are using MongoTemplate based repository
+Employee findById(String id) throws EmployeeNotFoundException;
 ```
-#### EmployeeServiceImpl - refactor getById method
+#### EmployeeServiceImpl - refactor getById and findById methods
 ```java
 import com.example.mdbspringboot.exception.EmployeeNotFoundException;
 
@@ -1296,6 +1667,41 @@ import com.example.mdbspringboot.exception.EmployeeNotFoundException;
 public Employee getById(String employeeId) throws EmployeeNotFoundException {
     return employeeRepository.findById(employeeId)
             .orElseThrow(() -> new EmployeeNotFoundException("employee not found with id: " + employeeId));
+}
+
+// here we are using MongoTemplate based repository
+public Employee findById(String id) throws EmployeeNotFoundException {
+    Employee employee = customEmployeeRepositoryTwo.findById(id);
+
+    if (Objects.nonNull(employee)) {
+        return employee;
+    } else {
+        throw new EmployeeNotFoundException("employee not found with id : " + id);
+    }
+}
+```
+
+### EmployeeServiceMockTest - refactor getById test
+```java
+import org.junit.jupiter.api.Assertions;
+
+// ...
+
+@DisplayName("getById 1 | GIVEN ...  SHOULD ...")
+@Test
+void getById_x1() {
+    String employeeId = "alex123";
+
+    when(employeeRepository.findById(employeeId)).thenReturn(Optional.of(emp1));
+
+    var employee = Assertions.assertDoesNotThrow(() -> {
+        return employeeService.getById(employeeId);
+    });
+
+    assertTrue(Objects.nonNull(employee));
+    assertEquals(employeeId, employee.getId());
+    assertTrue(employee.getFirstName().equals("Alex"));
+    assertEquals(3, employee.getProjects2().size());
 }
 ```
 
@@ -1585,10 +1991,8 @@ public class EmployeeServiceMiscTest {
 ```java
 package com.example.mdbspringboot.repository;
 
-import com.example.mdbspringboot.model.Employee;
-
 public interface CustomEmployeeRepository {
-    void testMethod(String employeeId, Employee employee);
+    boolean existsByEmail(String email);
 }
 ```
 
@@ -1604,23 +2008,17 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
 public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public void testMethod(String employeeId, Employee employee) {
+    public boolean existsByEmail(String email) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("email").is(employee.getEmail()));
-        List<Employee> employees = mongoTemplate.find(query, Employee.class);
 
-        if (employees.isEmpty()) {
-			System.out.println("Employee does not exist");
-		} else {
-			System.out.println(employee + " already exists");
-		}
+        query.addCriteria(Criteria.where("email").is(email));
+
+        return mongoTemplate.exists(query, Employee.class);
     }
 }
 ```
@@ -1633,108 +2031,17 @@ public interface EmployeeRepository extends MongoRepository<Employee, String>, C
 ```
 
 
-### testMethod - EmployeeService
+### existsByEmail - EmployeeService
 ```java
 // here we are using our custom repository
-void testMethod(String employeeId, Employee employee);
+boolean existsByEmail(String email);
 ```
 
-### testMethod - EmployeeServiceImpl
+### existsByEmail - EmployeeServiceImpl
 ```java
 // here we are using our custom repository
-public void testMethod(String employeeId, Employee employee) {
-    employeeRepository.testMethod(employeeId, employee);
-}
-```
-
-
-### create another interface: src\main\java\com\example\mdbspringboot\repository\CustomEmployeeRepositoryTwo.java
-```java
-package com.example.mdbspringboot.repository;
-
-import java.util.List;
-
-import com.example.mdbspringboot.model.Employee;
-
-public interface CustomEmployeeRepositoryTwo {
-    List<Employee> findAll();
-
-    void saveAll(final List<Employee> employees);
-
-    Employee findById(final String employeeId);
-}
-```
-
-### create the interface implementation: src\main\java\com\example\mdbspringboot\repository\CustomEmployeeRepositoryTwoImpl.java
-```java
-package com.example.mdbspringboot.repository;
-
-import java.util.List;
-
-import com.example.mdbspringboot.model.Employee;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.stereotype.Repository;
-
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Criteria;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@Repository
-public class CustomEmployeeRepositoryTwoImpl implements CustomEmployeeRepositoryTwo {
-
-    private final Logger LOG = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    public List<Employee> findAll() {
-        return mongoTemplate.findAll(Employee.class);
-    }
-
-    public void saveAll(final List<Employee> employees) {
-        mongoTemplate.insertAll(employees);
-    }
-
-    public Employee findById(final String employeeId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("id").is(employeeId));
-        
-		return mongoTemplate.findOne(query, Employee.class);
-    }
-}
-```
-
-### findById - EmployeeService
-```java
-// here we are using MongoTemplate based repository
-Employee findById(String id) throws EmployeeNotFoundException;
-```
-
-### EmployeeServiceImpl
-#### importing CustomEmployeeRepositoryTwo
-```java
-import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
-```
-#### handle CustomEmployeeRepositoryTwo DI
-```java
-@Autowired
-CustomEmployeeRepositoryTwo customEmployeeRepositoryTwo;
-```
-#### add method implementation
-```java
-// here we are using MongoTemplate based repository
-public Employee findById(String id) throws EmployeeNotFoundException {
-    Employee employee = customEmployeeRepositoryTwo.findById(id);
-
-    if (Objects.nonNull(employee)) {
-        return employee;
-    } else {
-        throw new EmployeeNotFoundException("employee not found with id : " + id);
-    }
+public boolean existsByEmail(String email) {
+    return employeeRepository.existsByEmail(email);
 }
 ```
 
@@ -1750,18 +2057,16 @@ import lombok.RequiredArgsConstructor;
 
 // ...
 
-// private final EmployeeRepository employeeRepository;
+private final EmployeeRepository employeeRepository;
 
 // public EmployeeService(EmployeeRepository employeeRepository) {
 //     this.employeeRepository = employeeRepository;
 // }
-private final EmployeeRepository employeeRepository;
 ```
 
 ### refactoring EmployeeServiceImpl DI - another way
 ```java
 // import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 // @Service
 // @RequiredArgsConstructor
@@ -1799,37 +2104,14 @@ private EmployeeService employeeService = new EmployeeServiceImpl();
 private EmployeeRepository employeeRepository;
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### create a package called com.example.mdbspringboot.controllers
 
-### create a controller
+### create a controller EmployeeController.java
 ```java
 package com.example.mdbspringboot.controllers;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -1869,7 +2151,7 @@ public class EmployeeController {
     @GetMapping("/")
     public List<Employee> getAllEmployees() {
         LOG.info("\n>>>>> Getting all employees.\n");
-        return employeeService.getAllEmployees();
+        return employeeService.getAll();
     }
 
     @GetMapping("/{employeeId}")
@@ -1887,27 +2169,15 @@ public class EmployeeController {
     @PostMapping("/create")
     // ResponseEntity - to configure the whole HTTP response: status code, headers and body
     // RequestBody - maps the HttpRequest body to a transfer or domain object (automatic deserialization)
-    public ResponseEntity<Employee> addEmployee(@RequestBody @Valid EmployeeDTO employee) {
+    public ResponseEntity<Employee> addEmployee(@RequestBody @Valid EmployeeDTO employeeDTO) {
         LOG.info("\n>>>>> Saving employee.\n");
-        return new ResponseEntity<>(employeeService.addEmployee(employee), HttpStatus.CREATED);
-    }
-
-    @PostMapping("/create-multiple")
-    public List<Employee> addEmployees(@RequestBody final List<Employee> employees) {
-        LOG.info("\n>>>>> Saving employees.\n");
-        return employeeService.addEmployees(employees);
+        return new ResponseEntity<>(employeeService.create(employeeDTO), HttpStatus.CREATED);
     }
 
     @PutMapping("/")
-    public Employee update(@RequestBody Employee employee) {
+    public Employee update(@RequestBody @Valid EmployeeDTO employeeDTO) {
         LOG.info("\n>>>>> Updating employee.\n");
-        return employeeService.update(employee);
-    }
-
-    @PatchMapping("/")
-    public Employee patch(@RequestBody Employee employee) {
-        LOG.info("\n>>>>> Patching employee.\n");
-        return employeeService.patch(employee);
+        return employeeService.update(employeeDTO);
     }
 
     // ...delete?id=6
@@ -1936,16 +2206,61 @@ public class EmployeeController {
 }
 ```
 
+### create: src\main\java\com\example\mdbspringboot\other\DemoComponent.java
+```java
+package com.example.mdbspringboot.other;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class DemoComponent {
+    public String dummyMethod() {
+        return "DemoComponent - dummyMethod";
+    }
+}
+```
+
+### EmployeeController: add
+```java
+import com.example.mdbspringboot.other.DemoComponent;
+
+// ...
+
+    @Autowired
+    DemoComponent demoComponent;
+
+
+    // add new log to getAllEmployees method
+    LOG.info("\n>>>>> {}\n", demoComponent.dummyMethod());
+```
+
+### now remove @Component annotation from the DemoComponent.java
+
+### create: src\main\java\com\example\mdbspringboot\config\BeanConfig.java
+```java
+package com.example.mdbspringboot.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.example.mdbspringboot.other.DemoComponent;
+
+@Configuration
+public class BeanConfig {
+
+    @Bean
+    public DemoComponent demoComponent() {
+        return new DemoComponent();
+    }
+
+}
+```
+
 ### create a file requests.http (at the root level)
 #### write a code to test endpoints
 ```
 ###
 GET http://localhost:8102/mdb-spring-boot/api/v1/employees/
-
-
-###
-GET http://localhost:8102/mdb-spring-boot/api/v1/employees/62ae16eff1677024b22befc3
-
 
 ### valid data
 POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
@@ -1975,6 +2290,11 @@ Content-Type: application/json
    "mobile":"123 345 6789"
 }
 
+
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/62b0b347b374da2a812986cf
+
+
 ### invalid data
 POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
 Content-Type: application/json
@@ -1992,117 +2312,50 @@ Content-Type: application/json
 
 
 ###
-POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create-multiple
-Content-Type: application/json
-
-[
-   {
-      "firstName":"Jane",
-      "lastName":"Doe",
-      "email":"jane@doe.com",
-      "gender":"FEMALE",
-      "department":"IT",
-      "projects":[
-         "Project 2",
-         "Project 4",
-         "Project 7"
-      ],
-      "projects2":[
-         {
-            "title":"Test 1",
-            "description":"1 Lorem ipsum dolor sit amet"
-         },
-         {
-            "title":"Test 2",
-            "description":"2 Lorem ipsum dolor sit amet"
-         }
-      ],
-      "salary":3500
-   },
-   {
-      "firstName":"Alex",
-      "lastName":"Brown",
-      "email":"alex@brown.com",
-      "gender":"Male",
-      "department":"HR",
-      "projects":[
-         "Project 1",
-         "Project 9"
-      ],
-      "projects2":[
-         {
-            "title":"Test 1",
-            "description":"1 Lorem ipsum dolor sit amet"
-         },
-         {
-            "title":"Test 2",
-            "description":"2 Lorem ipsum dolor sit amet"
-         }
-      ],
-      "salary":4200
-   }
-]
-
-
-### not working as expected
-###
-PATCH http://localhost:8102/mdb-spring-boot/api/v1/employees/
-Content-Type: application/json
-
-{
-  "id": "62ae4645550688361756bfbf",
-  "department": "IT",
-  "projects": [
-    "Project 2",
-    "Project 10"
-  ]
-}
-
-
-###
 PUT http://localhost:8102/mdb-spring-boot/api/v1/employees/ HTTP/1.1
 content-type: application/json
 
 {
-   "id":"62adbea9bc5633d36005310a",
-   "firstName":"Rory",
-   "lastName":"McGinty",
-   "email":"rmcginty1@baidu.com",
-   "gender":"Female",
-   "department":"R&D",
+   "id":"62b0b347b374da2a812986cf",
+   "firstName":"Tom",
+   "lastName":"Gibson",
+   "email":"tom@gibson.com",
+   "gender":"Male",
+   "department":"IT",
    "projects":[
       "Project 2",
-      "Project 4",
       "Project 5",
-      "Project 10"
+      "Project 14"
+
    ],
    "projects2":[
       {
-         "id":"3c7d5e53-11da-4366-bbdb-0c22ecaa8f6d",
-         "title":"Project 1",
-         "description":"Project 1 - Lorem ipsum dolor sit amet."
+         "id":null,
+         "title":"Test 1",
+         "description":"1 Lorem ipsum dolor sit amet"
       },
       {
-         "id":"3c4e0d02-3bc8-41f4-9c0e-2f2307957d1d",
-         "title":"Project 7",
-         "description":"Project 7 - Lorem ipsum dolor sit amet."
+         "id":null,
+         "title":"Test 2",
+         "description":"2 Lorem ipsum dolor sit amet"
       }
    ],
-   "salary":4900.0,
-   "createdAt":"2016-11-09T22:10:20"
+   "salary":6600.0,
+   "mobile":"123 345 6789",
+   "created":"2022-06-20T19:49:59.341"
 }
 
 
 ###
-DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete/?id=62ae45b5550688361756bfbd HTTP/1.1
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete/?id=62b0b347b374da2a812986cf HTTP/1.1
 
 
 ###
-DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v2/62ae4645550688361756bfbf HTTP/1.1
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v2/62b0b508b374da2a812986d0 HTTP/1.1
 
 
 ###
-DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=62ae4645550688361756bfbe HTTP/1.1
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=62b0b50db374da2a812986d1 HTTP/1.1
 
 ```
 
@@ -2144,10 +2397,6 @@ public class ApplicationExceptionHandler {
 
 ### EmployeeController - getEmployeeById
 ```java
-import com.example.mdbspringboot.exception.EmployeeNotFoundException;
-
-// ...
-
 @GetMapping("/{employeeId}")
 public ResponseEntity<Employee> getEmployeeById(@PathVariable String employeeId) throws EmployeeNotFoundException {
     LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
@@ -2266,17 +2515,11 @@ public class EmployeeController {
 
 ### EmployeeService - get paged data
 ```java
-import java.util.Map;
-
-// ...
-
 Map<String, Object> getAllPaged(int pageNo, int pageSize, String[] fields, String sortBy);
 ```
 
 ### EmployeeServiceImpl - get paged data
 ```java
-import java.util.Map;
-import java.util.HashMap;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
@@ -2387,10 +2630,12 @@ GET http://localhost:8102/mdb-spring-boot/api/v1/employees/salary?salary=4000 HT
 ### EmployeeController
 #### add new method
 ```java
+import org.springframework.web.bind.annotation.PatchMapping;
+
 // here we are using our custom repository
 @PatchMapping("/{employeeId}")
-public void testMethod(@PathVariable final String employeeId, @RequestBody final Employee employee) {
-    employeeService.testMethod(employeeId, employee);
+public Boolean testMethod(@PathVariable final String employeeId, @RequestBody final Employee employee) {
+    return employeeService.existsByEmail(employee.getEmail());
 }
 ```
 #### modify getEmployeeById method
@@ -2399,7 +2644,7 @@ public void testMethod(@PathVariable final String employeeId, @RequestBody final
 public ResponseEntity<Employee> getEmployeeById(@PathVariable String employeeId) throws EmployeeNotFoundException {
     LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
 
-    // return ResponseEntity.ok(employeeService.findOne(employeeId)); // delete this
+    // return ResponseEntity.ok(employeeService.getById(employeeId)); // delete this
 
     // here we are using MongoTemplate based repository
     return ResponseEntity.ok(employeeService.findById(employeeId));
@@ -2617,7 +2862,7 @@ public class SwaggerConfig {
 
 ### application.properties - add this:
 ```
-## related to Swagger - change the SpringBoot path matching pattern to AntPathMatcher 
+# related to Swagger - change the SpringBoot path matching pattern to AntPathMatcher 
 spring.mvc.pathmatch.matching-strategy=ant_path_matcher
 ```
 
@@ -3324,7 +3569,9 @@ public class HomeController2Test {
 ### HomeController.java:
 ```java
 import com.example.mdbspringboot.exception.EmployeeNotFoundException;
-
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.example.mdbspringboot.dto.EmployeeDTO;
+import java.util.Objects;
 
 // ...
 
@@ -3480,6 +3727,7 @@ private final EmployeeValidator employeeValidator; // works with: @RequiredArgsC
 
 // ...
 
+// The value of @InitBinder is the name of model attribute
 @InitBinder(value = EMPLOYEE_DTO)
 protected void initBinder(WebDataBinder binder) {
     binder.addValidators(employeeValidator);
@@ -3490,7 +3738,7 @@ protected void initBinder(WebDataBinder binder) {
 // validation example
 @RequestMapping(value = "/save", method = RequestMethod.POST, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 public String save(final RedirectAttributes redirectAttributes,
-        @Valid @ModelAttribute("employee") EmployeeDTO employeeDTO, BindingResult result, Model model) {
+        @Valid @ModelAttribute(EMPLOYEE_DTO) EmployeeDTO employeeDTO, BindingResult result, Model model) {
 
     if (result.hasErrors()) {
         model.addAttribute("errorMessage", "Failed to save");
@@ -3500,7 +3748,7 @@ public String save(final RedirectAttributes redirectAttributes,
         return "home/view-4"; // returning a view
     }
 
-    employeeService.addEmployee(employeeDTO);
+    employeeService.create(employeeDTO);
 
     redirectAttributes.addFlashAttribute("successMessage", "employee successfully saved");
 
@@ -3577,7 +3825,8 @@ public String save(final RedirectAttributes redirectAttributes,
         e.preventDefault();
 
         var formData = $(".employee-form").getFormData();
-        formData.projects = formData.projects.split(",");
+
+        formData.projects = formData.projects ? formData.projects.split(",") : [];
 
         $.ajax({
             type: "POST",
@@ -3588,19 +3837,23 @@ public String save(final RedirectAttributes redirectAttributes,
             window.location.href = "/mdb-spring-boot/home/view-two";
         }).fail(function (jqXHR, textStatus, errorThrown) {
             if (jqXHR?.responseText) {
-                let validationErrors = JSON.parse(jqXHR.responseText);
-                
-                if (validationErrors.length > 0) {
-                    $('.validation-errors').empty();
-                    for(let error of validationErrors) {
-                        let html = `<div style="color:red">
-                                        <span>${error.field} - ${error.defaultMessage}</span>
-                                    </div>`;
-                        $('.validation-errors').append(html);
+                try {
+                    let validationErrors = JSON.parse(jqXHR.responseText);
+
+                    if (validationErrors.length > 0) {
+                        $('.validation-errors').empty();
+                        for (let error of validationErrors) {
+                            let html = `<div style="color:red">
+                                            <span>${error.field} - ${error.defaultMessage}</span>
+                                        </div>`;
+                            $('.validation-errors').append(html);
+                        }
                     }
+                } catch (e) {
+                    console.log('invalid json', jqXHR?.responseText);
                 }
             }
-        })            
+        })
     });
 </script>
 ```
@@ -3609,6 +3862,7 @@ public String save(final RedirectAttributes redirectAttributes,
 ### HomeController.java: new employee AJAX + validation
 ```java
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 
 // ...
@@ -3621,7 +3875,7 @@ public ResponseEntity<?> ajaxSave(final RedirectAttributes redirectAttributes,
         return ResponseEntity.badRequest().body(result.getAllErrors());
     }
 
-    employeeService.addEmployee(employeeDTO);
+    employeeService.create(employeeDTO);
 
     redirectAttributes.addFlashAttribute("successMessage", "employee successfully saved");
 
@@ -3632,8 +3886,12 @@ public ResponseEntity<?> ajaxSave(final RedirectAttributes redirectAttributes,
 
 ### application.properties
 ```
+# ***** @Value annotation demo *****
 # we will read this from within method_3 of HomeController
-view-3-message=Hello there
+mail.from=test@test.com
+mail.host=test@test.com
+mail.port=25
+# ***** @Value annotation demo END *****
 ```
 
 ### ### HomeController.java: modify method_3 so that it returns ModelAndView
@@ -3644,16 +3902,22 @@ import java.util.Locale;
 
 // ...
 
-// we insert the view-3-message property from the application.properties file into the message attribute
-@Value("${view-3-message}")
-private String message;
+// ******* application.properties I *******
+// we bind values from the application.properties file to local variables
+@Value("${mail.from}")
+private String from;
+@Value("${mail.host}")
+private String host;
+@Value("${mail.port}")
+private String port;
+// ******* application.properties I END *******
 
 // ...
 
 @RequestMapping(method = RequestMethod.GET, value = "/view-three")
 public ModelAndView method_3(Locale locale) {
 	var mav = new ModelAndView("home/view-3");
-	mav.addObject("message", message);
+    mav.addObject("message", from + " " + host + " " + port);
 
     logger.info("\n>>>>>> Welcome home! The client locale is {}.", locale);
 
@@ -3664,6 +3928,148 @@ public ModelAndView method_3(Locale locale) {
 ### view-3.vm: add this to the view-3-container
 ```
 <div>$message</div>
+```
+
+### create: src\main\resources\custom.properties
+```
+# ***** @Value annotation demo *****
+# used in HomeController.java with:
+# @PropertySource("classpath:custom.properties")
+message=loading from external props
+```
+
+### HomeController.java: add this
+```java
+import org.springframework.context.annotation.PropertySource;
+//...
+@PropertySource("classpath:custom.properties") // new class annotation
+
+// ******* custom.properties *******
+// you also need to add @PropertySource on the class
+@Value("${message}")
+private String customPropertiesMessage;
+
+// method_3
+mav.addObject("message", from + " " + host + " " + port + " " + customPropertiesMessage);
+```
+
+### create: src\main\java\com\example\mdbspringboot\props\MailProps.java
+```java
+package com.example.mdbspringboot.props;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+import lombok.Data;
+
+// here we map fields from application.properties that are prefixed with: mail
+
+@ConfigurationProperties(prefix = "mail")
+@Component
+@Data
+public class MailProps {
+
+    private String from;
+    private String host;
+    private String port;
+}
+```
+
+### HomeController.java: add this
+```java
+// ******* application.properties II *******
+// here we are using DTO class
+@Autowired
+private MailProps mailProps;
+// ******* application.properties II END *******
+
+// ... 
+
+// method-3
+mav.addObject("mailProps", mailProps);
+```
+
+### view-3.vm: add this to the view-3-container
+```
+<div>$mailProps.from</div>
+<div>$mailProps.host</div>
+<div>$mailProps.port</div>
+```
+
+### create: src\main\resources\application-dev.properties
+```
+# DEVELOPMENT DB config properties
+# together with class DBConfig.java
+```
+### create: src\main\resources\application-stg.properties
+```
+# STAGE DB config properties
+# together with class DBConfig.java
+```
+### create: src\main\resources\application-prod.properties
+```
+# PROD DB config properties
+# together with class DBConfig.java
+```
+
+### move (cut - paste) this code from application.properties to application-dev.properties
+```
+### Local MongoDB config
+# spring.data.mongodb.authentication-database=admin
+# spring.data.mongodb.username=rootuser
+# spring.data.mongodb.password=rootpass
+# spring.data.mongodb.database=employeesdb
+# spring.data.mongodb.port=27017
+# spring.data.mongodb.host=localhost
+
+### Local MongoDB config - one-liners
+#### with authentication
+# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
+#### without authentication
+spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
+```
+
+### add this to main's application.properties
+```
+# setting the active profile 
+# (if we have application -dev, -stg, -prod .properties files)
+spring.profiles.active=dev
+```
+
+### add this to test's application-it.properties
+```
+### MongoDB config - one-liners
+#### with authentication
+# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
+#### without authentication
+spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
+```
+
+### create: src\main\java\com\example\mdbspringboot\config\DBConfig.java
+```java
+package com.example.mdbspringboot.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import lombok.extern.slf4j.Slf4j;
+
+// used with application -dev, -stg, -prod ... .properties files
+
+@Configuration
+@Slf4j
+public class DBConfig {
+
+    @Value("${spring.data.mongodb.uri}")
+    private String url;
+
+    @Bean
+    public String dataSourceProps() {
+        log.info("\n\n>>>>> Data Source Connection For: " + url + "\n\n");
+        return url;
+    }
+}
 ```
 
 ### ### HomeController.java: add this
@@ -3775,11 +4181,116 @@ void addEmployee_x1() throws Exception {
 }
 ```
 
+### create file: src\main\java\com\example\mdbspringboot\interceptor\CoreInterceptor.java
+```java
+package com.example.mdbspringboot.interceptor;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
 
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+public class CoreInterceptor implements HandlerInterceptor {
 
+    /**
+     * to perform some action on requests sent to the controller
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
+        log.info("Request intercepted");
+        return true;
+    }
+
+    /**
+     * to perform some action on responses sent to the client like addng attributes
+     * to the model
+     */
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+            ModelAndView modelAndView) {
+        log.info("Response intercepted");
+    }
+}
+```
+
+### to register the interceptor create file: src\main\java\com\example\mdbspringboot\config\WebConfiguration.java
+```java
+package com.example.mdbspringboot.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+
+import com.example.mdbspringboot.interceptor.CoreInterceptor;
+
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+ * All web related config. Serves as replacement for @EnableWebMvc.
+ */
+@Configuration
+public class WebConfiguration implements WebMvcConfigurer {
+
+    @Bean
+    public CoreInterceptor coreInterceptor() {
+        return new CoreInterceptor();
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(coreInterceptor());
+    }
+}
+```
+
+### create src\main\java\com\example\mdbspringboot\other\EagerLoadingBean.java
+```java
+package com.example.mdbspringboot.other;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class EagerLoadingBean {
+
+    public EagerLoadingBean() {
+        System.out.println("\n\n>>>>> EagerLoadingBean object created ..\n\n");
+    }
+}
+```
+
+### create src\main\java\com\example\mdbspringboot\other\LazyLoadingBean.java
+```java
+package com.example.mdbspringboot.other;
+
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+@Component
+@Lazy
+public class LazyLoadingBean {
+
+    public LazyLoadingBean() {
+        System.out.println("\n\n>>>>> LazyLoadingBean object created ..\n\n");
+    }
+}
+```
+
+### when you start the app you will see that only EagerLoadingBean object is created
+
+### HomeController - add LazyLoadingBean
+```java
+import com.example.mdbspringboot.other.LazyLoadingBean;
+
+// ...
+
+    @Autowired
+    private LazyLoadingBean lazyLoadingBean;
+```
 
 
 

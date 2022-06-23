@@ -1,0 +1,110 @@
+<div class="view-4-container">
+    <h1>VIEW 4</h1>
+    <div>$request.getRequestURI()</div>
+
+    #renderSuccessErrorMessage()
+    <form class="employee-form" method="post" action="/mdb-spring-boot/home/save">
+
+        <div>
+            <label for="firstname">First name:</label>
+            <input type="text" id="firstname" name="firstName" value="$!employeeDTO.firstName">
+        </div>
+
+        <div>
+            <label for="lastname">Last name:</label>
+            <input type="text" id="lastname" name="lastName" value="$!employeeDTO.lastName">
+        </div>
+
+        <div>
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" value="$!employeeDTO.email">
+        </div>
+
+        <div>
+            <label for="gender">Gender:</label>
+            <input type="text" id="gender" name="gender" value="$!employeeDTO.gender">
+        </div>
+
+        <div>
+            <label for="department">Department:</label>
+            <input type="text" id="department" name="department" value="$!employeeDTO.department">
+        </div>
+
+        #set ($employeeProjects = "")
+        #foreach( $project in $!employeeDTO.projects )
+            #if($!employeeProjects == "")
+                #set ($employeeProjects = $project)
+            #else
+                #set ($employeeProjects = $employeeProjects + ', ' + $project)
+            #end
+        #end
+
+        <div>
+            <label for="projects">Projects:</label>
+            <input type="text" id="projects" name="projects" value="$!employeeProjects">
+        </div>
+
+        <div>
+            <label for="salary">Salary:</label>
+            <input type="text" id="salary" name="salary" value="$!employeeDTO.salary">
+        </div>
+
+        <div>
+            <label for="mobile">Mobile:</label>
+            <input type="text" id="mobile" name="mobile" value="$!employeeDTO.mobile">
+        </div>
+
+        <button type="submit">Save</button>
+        <button id="btnAjaxSubmit" type="button">Save (ajax)</button>
+    </form>
+    #renderValidationErrors($validationErrors)
+    <script>
+        (function ($) {
+            $.fn.getFormData = function () {
+                let data = {};
+                let dataArray = $(this).serializeArray();
+
+                for (let i = 0; i < dataArray.length; i++) {
+                    data[dataArray[i].name] = dataArray[i].value;
+                }
+
+                return data;
+            };
+        })(jQuery);
+
+        $("#btnAjaxSubmit").on("click", (e) => {
+            e.preventDefault();
+
+            var formData = $(".employee-form").getFormData();
+
+            formData.projects = formData.projects ? formData.projects.split(",") : [];
+
+            $.ajax({
+                type: "POST",
+                url: "/mdb-spring-boot/home/ajax-save",
+                data: JSON.stringify(formData),
+                contentType: 'application/json', // what type of content we're sending
+            }).done(function (data) {
+                window.location.href = "/mdb-spring-boot/home/view-two";
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                if (jqXHR?.responseText) {
+                    try {
+                        let validationErrors = JSON.parse(jqXHR.responseText);
+
+                        if (validationErrors.length > 0) {
+                            $('.validation-errors').empty();
+                            for (let error of validationErrors) {
+                                let html = `<div style="color:red">
+                                                <span>${error.field} - ${error.defaultMessage}</span>
+                                            </div>`;
+                                $('.validation-errors').append(html);
+                            }
+                        }
+                    } catch (e) {
+                        console.log('invalid json', jqXHR?.responseText);
+                    }
+                }
+            })
+        });
+    </script>
+</div>
