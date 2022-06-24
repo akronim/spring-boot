@@ -2155,6 +2155,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{employeeId}")
+    // @PathVariable - if not provided => 404
     public Employee getEmployeeById(@PathVariable String employeeId) {
         LOG.info("\n>>>>> Getting employee with ID: {}.\n", employeeId);
         try {
@@ -2182,6 +2183,7 @@ public class EmployeeController {
 
     // ...delete?id=6
     @DeleteMapping("/delete")
+    // @RequestParam - if not provided, nothing, no exception
     public String delete(@RequestParam String id) {
         LOG.info("\n>>>>> Deleting employee with ID: {}.\n", id);
         employeeService.delete(id);
