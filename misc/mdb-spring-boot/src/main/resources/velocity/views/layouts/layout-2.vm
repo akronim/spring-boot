@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <link href="/mdb-spring-boot/styles/styles.css" rel="stylesheet" type="text/css">
+        <style>
+            body {
+                background-color: lightgreen;
+                font-family: arial;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <div>$!which_layout</div>
+
+            #parse("/fragments/header.vm")
+
+            <!-- see application.properties -->
+            $body_content
+        </div>
+    </body>
+</html>

@@ -1,0 +1,32 @@
+<div class="view-2-container">
+    #renderAlertMessage("View 2 - a special message")
+    <h1>VIEW 2</h1>
+    <div>$request.getRequestURI()</div>
+
+    #renderSuccessErrorMessage()
+
+    <table class="employees-table">
+    <tr>
+        <th>No</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Gender</th>
+        <th>Email</th>
+        <th>Department</th>
+        <th>Salary</th>
+    </tr>
+    #foreach($x in $employees)
+        <tr>
+            <td>$foreach.count</td>
+            <td>$x.firstName</td>
+            <td>$x.lastName</td>
+            <td>$x.gender</td>
+            <td>$x.email</td>
+            <td>$x.department</td>
+            <td>$x.salary</td>
+        </tr>
+    #end
+    </table>
+
+    <a href="/mdb-spring-boot/home/employee/edit">Create new</a>
+</div>

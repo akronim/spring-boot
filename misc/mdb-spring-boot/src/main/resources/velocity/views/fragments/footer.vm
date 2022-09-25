@@ -1,0 +1,4 @@
+<div class="footer-container">
+    <h1>FOOTER</h1>
+    <a href="$!WikipediaLink" target="_blank">$!WikipediaLinkLabel</a>
+</div>

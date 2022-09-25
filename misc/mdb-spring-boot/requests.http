@@ -1,0 +1,142 @@
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/
+
+### valid data
+POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
+Content-Type: application/json
+
+{
+   "firstName":"Tom",
+   "lastName":"Gibson",
+   "email":"tom@gibson.com",
+   "gender":"Male",
+   "department":"R&D",
+   "projects":[
+      "Project 2",
+      "Project 10"
+   ],
+   "projects2":[
+      {
+         "title":"Test 1",
+         "description":"1 Lorem ipsum dolor sit amet"
+      },
+      {
+         "title":"Test 2",
+         "description":"2 Lorem ipsum dolor sit amet"
+      }
+   ],
+   "salary":5600,
+   "mobile":"123 345 6789"
+}
+
+
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/62b0b347b374da2a812986cf
+
+
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/employee-by-email?email=john@smith.com
+
+
+### invalid data
+POST http://localhost:8102/mdb-spring-boot/api/v1/employees/create
+Content-Type: application/json
+
+{
+  "firstName": "",
+  "lastName": null,
+  "email": "tomgibson.com",
+  "gender": "Male",
+  "projects": [],
+  "projects2": [],
+  "salary": 15600,
+  "mobile": "123*345/6789"
+}
+
+
+###
+PUT http://localhost:8102/mdb-spring-boot/api/v1/employees/ HTTP/1.1
+content-type: application/json
+
+{
+   "id":"62b0b347b374da2a812986cf",
+   "firstName":"Tom",
+   "lastName":"Gibson",
+   "email":"tom@gibson.com",
+   "gender":"Male",
+   "department":"IT",
+   "projects":[
+      "Project 2",
+      "Project 5",
+      "Project 14"
+
+   ],
+   "projects2":[
+      {
+         "id":null,
+         "title":"Test 1",
+         "description":"1 Lorem ipsum dolor sit amet"
+      },
+      {
+         "id":null,
+         "title":"Test 2",
+         "description":"2 Lorem ipsum dolor sit amet"
+      }
+   ],
+   "salary":6600.0,
+   "mobile":"123 345 6789",
+   "created":"2022-06-20T19:49:59.341"
+}
+
+
+###
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete/?id=62b0b347b374da2a812986cf HTTP/1.1
+
+
+###
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v2/62b0b508b374da2a812986d0 HTTP/1.1
+
+
+###
+DELETE http://localhost:8102/mdb-spring-boot/api/v1/employees/delete-v3?id=62b0b50db374da2a812986d1 HTTP/1.1
+
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/page?pagesize=20&fields=firstName,lastName,salary&sortby=firstName&pageno=0 HTTP/1.1
+
+
+###
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/projects?projects=Project 9,Project 10 HTTP/1.1
+
+## not working
+### 
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/example HTTP/1.1
+content-type: application/json
+
+{
+
+}
+
+### 
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/first-name?firstName=Al HTTP/1.1
+
+
+### 
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/department?department=IT HTTP/1.1
+
+### 
+GET http://localhost:8102/mdb-spring-boot/api/v1/employees/salary?salary=4000 HTTP/1.1
+
+
+###
+PATCH http://localhost:8102/mdb-spring-boot/api/v1/employees/625c6a85c131622dc1789587
+Content-Type: application/json
+
+{
+  "id": "625c6a85c131622dc1789587",
+  "department": "IT",
+  "projects": [
+    "Project 2",
+    "Project 10"
+  ]
+}
+

@@ -98,6 +98,7 @@
 
 ### We can run the app simply by using a single command
 ```
+mvn install -DskipTests
 mvn spring-boot:run
 ```
 ### you will see something like
@@ -129,7 +130,7 @@ exit
 
 
 ### define application properties - resources\application.properties
-```
+```yml
 ### App config
 #### the app will run on port 8102
 server.port=8102 
@@ -152,6 +153,120 @@ spring.main.banner-mode=off
 #### without authentication
 spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
 ```
+
+### using docker
+- nvm use 14
+- install Docker Desktop: https://www.docker.com/get-started/
+
+### check the version of Docker
+```
+docker --version
+```
+### check the version of Docker Compose
+```
+docker-compose version
+```
+### create a file: docker-compose.yml in the project directory
+```
+touch docker-compose.yml
+```
+### docker-compose.yml
+```yml
+version: "3.8" # the version of the docker-compose file syntax
+services:
+# container 1 - mongodb
+  mongodb:
+    image: mongo # would get the latest version for mongodb
+    container_name: mongodb
+    ports: 
+        - 27017:27017 # host:container
+    volumes: 
+        - data:/data
+    environment: 
+        - MONGO_INITDB_ROOT_USERNAME=rootuser
+        - MONGO_INITDB_ROOT_PASSWORD=rootpass
+# container 2 - mongo-express GUI
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    depends_on:
+      - mongodb
+    restart: always
+    # port 8081 is exposed to allow access to the web interface
+    ports: 
+        - 8081:8081 # host:container
+    environment: 
+        - ME_CONFIG_MONGODB_SERVER=mongodb
+        - ME_CONFIG_MONGODB_ADMINUSERNAME=rootuser
+        - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpass
+        - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+        - ME_CONFIG_BASICAUTH_USERNAME=admin #
+        - ME_CONFIG_BASICAUTH_PASSWORD=admin123 #
+# for storing the data
+volumes: 
+    data: {}
+# for communication between containers
+networks:
+    default:
+        # overriding default name
+        name: mongodb_network
+```
+### create and run docker containers
+```
+docker-compose -f docker-compose.yml up
+```
+### check if the containers are indeed up and running
+```
+docker ps
+```
+### stop and remove everything
+```
+docker-compose -f docker-compose.yml down
+```
+### create and run docker containers - detached mode
+```
+docker-compose -f docker-compose.yml up -d
+```
+### now visit this addres for Mongo Express GUI:
+http://localhost:8081/
+
+### start - stop the containers without removing them
+```
+docker-compose -f docker-compose.yml stop #or: ctrl C
+docker-compose -f docker-compose.yml start
+```
+### using terminal - mongo shell
+#### list running containers and check the CONTAINER ID for IMAGE: mongo, NAMES: mongodb
+```
+docker ps
+```
+#### get bash interactive shell for the IMAGE: mongo, NAMES: mongodb
+```
+docker exec -it {mongo CONTAINER ID} bash
+```
+#### connect to a MongoDB server
+```
+mongo mongodb://localhost:27017 -u rootuser -p rootpass
+```
+#### list all databases
+```
+show dbs;
+```
+### importing data into db
+#### open a new terminal
+#### list running containers
+```
+docker ps
+```
+### finally, modify application.properties
+```
+### Local MongoDB config - one-liners
+#### with authentication
+spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
+#### without authentication
+# spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
+```
+### using docker END
 
 
 ### create a package named com.example.mdbspringboot.model and add the class Project.java
@@ -244,7 +359,6 @@ package com.example.mdbspringboot.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -254,7 +368,6 @@ import lombok.NoArgsConstructor;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
 
-import com.example.mdbspringboot.model.Employee;
 import com.example.mdbspringboot.model.Project;
 
 @Data
@@ -295,38 +408,6 @@ public class EmployeeDTO {
     @Pattern(regexp = "^(\\d{3}[- .]?){2}\\d{4}$", message = "invalid mobile number entered ")
     private String mobile;
     private LocalDateTime created;
-
-    public static EmployeeDTO toEmployeeDTO(Employee employee) {
-        return EmployeeDTO.builder()
-                .id(employee.getId())
-                .firstName(employee.getFirstName())
-                .lastName(employee.getLastName())
-                .email(employee.getEmail())
-                .gender(employee.getGender())
-                .department(employee.getDepartment())
-                .projects(employee.getProjects())
-                .projects2(employee.getProjects2())
-                .salary(employee.getSalary())
-                .mobile(employee.getMobile())
-                .created(employee.getCreatedAt())
-                .build();
-    }
-
-    public static Employee fromEmployeeDTO(EmployeeDTO employeeDTO) {
-        return Employee.builder()
-                .id(Objects.nonNull(employeeDTO.getId()) ? employeeDTO.getId() : null)
-                .firstName(employeeDTO.getFirstName())
-                .lastName(employeeDTO.getLastName())
-                .email(employeeDTO.getEmail())
-                .gender(employeeDTO.getGender())
-                .department(employeeDTO.getDepartment())
-                .projects(employeeDTO.getProjects())
-                .projects2(employeeDTO.getProjects2())
-                .salary(employeeDTO.getSalary())
-                .mobile(employeeDTO.getMobile())
-                .createdAt(employeeDTO.getCreated())
-                .build();
-    }
 }
 ```
 
@@ -513,6 +594,11 @@ mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --
 mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=abs\path\to\mdb-spring-boot\employees.json --jsonArray
 ```
 
+#### if using DOCKER - import the data (containers must be running)
+```
+docker exec -i {mongo CONTAINER ID} sh -c 'mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass -c employees -d employeesdb --drop --jsonArray' < /path/mdb-spring-boot/employees.json
+```
+
 ### check if data imported
 ```
 mongosh mongodb://localhost:27017/employeesdb
@@ -555,6 +641,7 @@ package com.example.mdbspringboot.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import com.example.mdbspringboot.dto.EmployeeDTO;
 import com.example.mdbspringboot.model.Employee;
@@ -605,6 +692,46 @@ public class EmployeeServiceImpl implements EmployeeService {
 }
 ```
 
+### EmployeeDTO.java - add
+```java
+import com.example.mdbspringboot.model.Employee;
+import java.util.Objects;
+
+// ...
+
+public static EmployeeDTO toEmployeeDTO(Employee employee) {
+    return EmployeeDTO.builder()
+            .id(employee.getId())
+            .firstName(employee.getFirstName())
+            .lastName(employee.getLastName())
+            .email(employee.getEmail())
+            .gender(employee.getGender())
+            .department(employee.getDepartment())
+            .projects(employee.getProjects())
+            .projects2(employee.getProjects2())
+            .salary(employee.getSalary())
+            .mobile(employee.getMobile())
+            .created(employee.getCreatedAt())
+            .build();
+}
+
+public static Employee fromEmployeeDTO(EmployeeDTO employeeDTO) {
+    return Employee.builder()
+            .id(Objects.nonNull(employeeDTO.getId()) ? employeeDTO.getId() : null)
+            .firstName(employeeDTO.getFirstName())
+            .lastName(employeeDTO.getLastName())
+            .email(employeeDTO.getEmail())
+            .gender(employeeDTO.getGender())
+            .department(employeeDTO.getDepartment())
+            .projects(employeeDTO.getProjects())
+            .projects2(employeeDTO.getProjects2())
+            .salary(employeeDTO.getSalary())
+            .mobile(employeeDTO.getMobile())
+            .createdAt(employeeDTO.getCreated())
+            .build();
+}
+```
+
 
 ### create a package called com.example.mdbspringboot.controllers
 
@@ -613,6 +740,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 package com.example.mdbspringboot.controllers;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -649,7 +777,6 @@ public class EmployeeController {
 package com.example.mdbspringboot.services;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -661,31 +788,26 @@ public class EmployeeServiceImplV2 implements EmployeeService {
 
     @Override
     public List<Employee> getAll() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Employee getById(String employeeId) {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Employee create(EmployeeDTO employee) {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Employee update(EmployeeDTO employee) {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public void delete(String id) {
-        // TODO Auto-generated method stub
         
     }
 }
@@ -768,7 +890,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class MdbSpringBootApplicationTests {
 
-	// object underTest
+	// object under test
 	Calculator calculator = new Calculator();
 
 	@Test
@@ -1319,6 +1441,39 @@ public List<Employee> getAllBySalaryGTE(int salary) {
 }
 ```
 
+### EmployeeServiceImplV2.java - add
+```java
+    @Override
+    public Map<String, Object> getByProjects(String[] projects) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<Employee> getAllByExample(Employee employee) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<Employee> getAllByFirstNameStartingWith(String firstName) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<Employee> getAllByDepartment(String department) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<Employee> getAllBySalaryGTE(int salary) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+```
+
 ### EmployeeServiceTest.java
 ```java
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1420,6 +1575,10 @@ import com.example.mdbspringboot.repository.CustomEmployeeRepositoryTwo;
 ```
 #### handle CustomEmployeeRepositoryTwo DI
 ```java
+import org.springframework.beans.factory.annotation.Autowired;
+
+// ...
+
 @Autowired
 CustomEmployeeRepositoryTwo customEmployeeRepositoryTwo;
 ```
@@ -2104,9 +2263,7 @@ private EmployeeService employeeService = new EmployeeServiceImpl();
 private EmployeeRepository employeeRepository;
 ```
 
-### create a package called com.example.mdbspringboot.controllers
-
-### create a controller EmployeeController.java
+### EmployeeController.java
 ```java
 package com.example.mdbspringboot.controllers;
 
@@ -2225,6 +2382,7 @@ public class DemoComponent {
 ### EmployeeController: add
 ```java
 import com.example.mdbspringboot.other.DemoComponent;
+import org.springframework.beans.factory.annotation.Autowired;
 
 // ...
 
@@ -2500,8 +2658,6 @@ public class EmployeeController {
 ```
 #### with this
 ```java
-import org.springframework.beans.factory.annotation.Autowired;
-
 @RestController
 @RequestMapping("api/v1/employees")
 public class EmployeeController {
@@ -2683,125 +2839,6 @@ java -jar target/mdb-spring-boot-0.0.1-SNAPSHOT.jar
 ```
 
 
-### using docker
-- nvm use 14
-- install Docker Desktop: https://www.docker.com/get-started/
-
-### check the version of Docker
-```
-docker --version
-```
-### check the version of Docker Compose
-```
-docker-compose version
-```
-### create a file: docker-compose.yml in the project directory
-```
-touch docker-compose.yml
-```
-### docker-compose.yml
-```yml
-version: "3.8" # the version of the docker-compose file syntax
-services:
-# container 1 - mongodb
-  mongodb:
-    image: mongo # would get the latest version for mongodb
-    container_name: mongodb
-    ports: 
-        - 27017:27017 # host:container
-    volumes: 
-        - data:/data
-    environment: 
-        - MONGO_INITDB_ROOT_USERNAME=rootuser
-        - MONGO_INITDB_ROOT_PASSWORD=rootpass
-# container 2 - mongo-express GUI
-  mongo-express:
-    image: mongo-express
-    container_name: mongo-express
-    depends_on:
-      - mongodb
-    restart: always
-    # port 8081 is exposed to allow access to the web interface
-    ports: 
-        - 8081:8081 # host:container
-    environment: 
-        - ME_CONFIG_MONGODB_SERVER=mongodb
-        - ME_CONFIG_MONGODB_ADMINUSERNAME=rootuser
-        - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpass
-        - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
-        - ME_CONFIG_BASICAUTH_USERNAME=admin #
-        - ME_CONFIG_BASICAUTH_PASSWORD=admin123 #
-# for storing the data
-volumes: 
-    data: {}
-# for communication between containers
-networks:
-    default:
-        # overriding default name
-        name: mongodb_network
-```
-### create and run docker containers
-```
-docker-compose -f docker-compose.yml up
-```
-### check if the containers are indeed up and running
-```
-docker ps
-```
-### stop the containers: ctrl C
-### remove everything
-```
-docker-compose -f docker-compose.yml down
-```
-### create and run docker containers - detached mode
-```
-docker-compose -f docker-compose.yml up -d
-```
-### now visit this addres for Mongo Express GUI:
-http://localhost:8081/
-
-### start - stop the containers without removing them
-```
-docker-compose -f docker-compose.yml stop
-docker-compose -f docker-compose.yml start
-```
-### using terminal - mongo shell
-#### list running containers and check the CONTAINER ID for IMAGE: mongo, NAMES: mongodb
-```
-docker ps
-```
-#### get bash interactive shell for the IMAGE: mongo, NAMES: mongodb container
-```
-docker exec -it {mongo CONTAINER ID} bash
-```
-#### connect to a MongoDB server
-```
-mongo mongodb://localhost:27017 -u rootuser -p rootpass
-```
-#### list all databases
-```
-show dbs;
-```
-### importing data into db
-#### open a new terminal
-#### list running containers
-```
-docker ps
-```
-#### import the data
-```
-docker exec -i {mongo CONTAINER ID} sh -c 'mongoimport --authenticationDatabase admin --username=rootuser --password=rootpass -c employees -d employeesdb --drop --jsonArray' < /path/mdb-spring-boot/employees.json
-```
-### finally, modify application.properties
-```
-### Local MongoDB config - one-liners
-spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
-# spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
-
-
-```
-### using docker END
-
 ### using swagger
 ### adding dependency in pom.xml
 - visit: https://mvnrepository.com/ 
@@ -2865,7 +2902,7 @@ public class SwaggerConfig {
 ### application.properties - add this:
 ```
 # related to Swagger - change the SpringBoot path matching pattern to AntPathMatcher 
-spring.mvc.pathmatch.matching-strategy=ant_path_matcher
+spring.mvc.pathmatch.matching-strategy=ant-path-matcher
 ```
 
 ### visit
@@ -2912,7 +2949,7 @@ import io.swagger.annotations.ApiModelProperty;
 ```
 
 ### application.properties: add this velocity configuration
-```
+```yaml
 ## ======= Velocity configuration =======
 spring.velocity.resource-loader-path=classpath:/velocity/views
 spring.velocity.suffix=.vm
@@ -3344,7 +3381,7 @@ spring.velocity.properties.velocimacro.library=/macros/macros.vm
 ```
 
 ### view-2.vm
-```
+```html
 <div class="view-2-container">
     #renderAlertMessage("View 2 - a special message")
     <h1>VIEW 2</h1>
@@ -3353,7 +3390,7 @@ spring.velocity.properties.velocimacro.library=/macros/macros.vm
 ```
 
 ### view-3.vm
-```
+```html
 <div class="view-3-container">
     <h1>VIEW 3</h1>
     <div>$request.getRequestURI()</div>
@@ -3887,7 +3924,7 @@ public ResponseEntity<?> ajaxSave(final RedirectAttributes redirectAttributes,
 
 
 ### application.properties
-```
+```yml
 # ***** @Value annotation demo *****
 # we will read this from within method_3 of HomeController
 mail.from=test@test.com
@@ -3933,7 +3970,7 @@ public ModelAndView method_3(Locale locale) {
 ```
 
 ### create: src\main\resources\custom.properties
-```
+```yml
 # ***** @Value annotation demo *****
 # used in HomeController.java with:
 # @PropertySource("classpath:custom.properties")
@@ -3979,6 +4016,10 @@ public class MailProps {
 
 ### HomeController.java: add this
 ```java
+import com.example.mdbspringboot.props.MailProps;
+
+// ...
+
 // ******* application.properties II *******
 // here we are using DTO class
 @Autowired
@@ -3999,23 +4040,23 @@ mav.addObject("mailProps", mailProps);
 ```
 
 ### create: src\main\resources\application-dev.properties
-```
+```yml
 # DEVELOPMENT DB config properties
 # together with class DBConfig.java
 ```
 ### create: src\main\resources\application-stg.properties
-```
+```yml
 # STAGE DB config properties
 # together with class DBConfig.java
 ```
 ### create: src\main\resources\application-prod.properties
-```
+```yml
 # PROD DB config properties
 # together with class DBConfig.java
 ```
 
 ### move (cut - paste) this code from application.properties to application-dev.properties
-```
+```yml
 ### Local MongoDB config
 # spring.data.mongodb.authentication-database=admin
 # spring.data.mongodb.username=rootuser
@@ -4026,25 +4067,25 @@ mav.addObject("mailProps", mailProps);
 
 ### Local MongoDB config - one-liners
 #### with authentication
-# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
+spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
 #### without authentication
-spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
+# spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
 ```
 
 ### add this to main's application.properties
-```
+```yml
 # setting the active profile 
 # (if we have application -dev, -stg, -prod .properties files)
 spring.profiles.active=dev
 ```
 
 ### add this to test's application-it.properties
-```
+```yml
 ### MongoDB config - one-liners
 #### with authentication
-# spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
+spring.data.mongodb.uri=mongodb://rootuser:rootpass@127.0.0.1:27017/employeesdb?authSource=admin&ssl=false
 #### without authentication
-spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
+# spring.data.mongodb.uri=mongodb://127.0.0.1:27017/employeesdb?ssl=false
 ```
 
 ### create: src\main\java\com\example\mdbspringboot\config\DBConfig.java
@@ -4090,7 +4131,7 @@ public String wikipediaLink() {
 ```
 
 ### footer.vm
-```
+```html
 <div class="footer-container">
     <h1>FOOTER</h1>
     <a href="$!WikipediaLink" target="_blank">$!WikipediaLinkLabel</a>
@@ -4204,7 +4245,7 @@ public class CoreInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
-        log.info("Request intercepted");
+        log.info("\n\n %%%%%%%%% Request intercepted\n\n");
         return true;
     }
 
@@ -4215,7 +4256,7 @@ public class CoreInterceptor implements HandlerInterceptor {
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
             ModelAndView modelAndView) {
-        log.info("Response intercepted");
+        log.info("\n\n %%%%%%%%% Response intercepted\n\n");
     }
 }
 ```
