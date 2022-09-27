@@ -1,0 +1,40 @@
+# Maven
+
+# create a project
+$ mvn archetype:generate -DgroupId=test -DartifactId=demo -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+
+# compile
+$ mvn compile
+
+# test
+$ mvn test
+$ mvn -pl "ifortuna-admin" test
+$ mvn -pl "ifortuna-" surefire:test
+
+# package
+$ mvn package
+
+# clean install
+$ mvn clean install
+$ mvn -T 4C clean install -Dmaven.test.skip -DskipTests
+$ mvn -T 4C clean install -Dmaven.test.skip -DskipTests -X
+
+
+# generate documentation
+## https://maven.apache.org/plugins/maven-javadoc-plugin/usage.html
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+      </plugin>
+    </plugins>
+  </reporting>
+
+$ mvn javadoc:javadoc
+
+
+
+

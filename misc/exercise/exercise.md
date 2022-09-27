@@ -7,6 +7,250 @@
 ### https://medium.com/javarevisited/building-a-rest-service-with-spring-boot-and-mongodb-part-1-2de01e4f434d
 
 
+### tree -f
+
+### to check if you are using BASH or ZSH, run the command
+```
+$ echo $SHELL
+```
+
+### banners
+https://devops.datenkollektiv.de/banner.txt/index.html
+
+### Embedded MongoDB - MongoClient
+
+# spring-boot and mongodb
+- https://start.spring.io/ => Spring Web, Embedded MongoDB Database
+
+### pom.xml - you will have this
+```xml
+<dependency>
+	<groupId>de.flapdoodle.embed</groupId>
+	<artifactId>de.flapdoodle.embed.mongo</artifactId>
+	<!-- <scope>test</scope> -->
+</dependency>
+```
+
+### https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
+### pom.xml - add
+```xml
+<dependency>
+    <groupId>org.mongodb</groupId>
+    <artifactId>mongo-java-driver</artifactId>
+    <version>3.12.11</version>
+</dependency>
+```
+### application.properties
+```
+# to instruct flapdoodle mongo to run on specific port
+spring.data.mongodb.port=28018
+
+# specified version will be automatically downloaded - for available versions see:
+# https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo
+spring.mongodb.embedded.version=3.4.6
+```
+### DemoApplication.java
+```java
+package com.example.demo;
+
+import org.bson.Document;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+
+@SpringBootApplication
+public class DemoApplication implements CommandLineRunner {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoApplication.class, args);
+	}
+
+	MongoClient mongoClient;
+
+	public MongoClient getClient() {
+		if (mongoClient == null) {
+			return new MongoClient("localhost", 28018);
+		}
+
+		return mongoClient;
+	}
+
+	@Override
+	public void run(String... args) throws Exception {
+		MongoClient mongoClient = getClient();
+		MongoDatabase database = mongoClient.getDatabase("mongoTestDB");
+		MongoCollection<Document> employeCollection = database.getCollection("employees");
+
+		Document employee1 = new Document();
+		employee1.append("firstName", "John");
+		employee1.append("lastName", "Doe");
+		employee1.append("address", "Some City");
+
+		employeCollection.insertOne(employee1);
+
+	}
+
+}
+```
+### run
+```
+mvn spring-boot:run
+```
+### MongoDB shell
+```
+mongo --port 28018
+```
+### show all connections
+```
+db.serverStatus().connections
+```
+### if you need to shut down mongo server manually:
+```
+mongo --port 28018
+use admin
+db.shutdownServer()
+```
+### pom.xml - add this (as first dependency) to use MongoTemplate and embedded mongo
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-mongodb</artifactId>
+</dependency>
+```
+### application.properties - add
+```
+spring.data.mongodb.host=localhost
+```
+### create: Employee.java
+```java
+package com.example.demo;
+
+import java.util.Objects;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document
+public class Employee {
+    @Id
+    public String id;
+    public String firstName;
+    public String lastName;
+    public String address;
+
+    public Employee() {
+    }
+
+    public Employee(String id, String firstName, String lastName, String address) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.address = address;
+    }
+
+    public String getId() {
+        return this.id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getFirstName() {
+        return this.firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return this.lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getAddress() {
+        return this.address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof Employee)) {
+            return false;
+        }
+        Employee employee = (Employee) o;
+        return Objects.equals(id, employee.id) && Objects.equals(firstName, employee.firstName)
+                && Objects.equals(lastName, employee.lastName) && Objects.equals(address, employee.address);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, firstName, lastName, address);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+                " id='" + getId() + "'" +
+                ", firstName='" + getFirstName() + "'" +
+                ", lastName='" + getLastName() + "'" +
+                ", address='" + getAddress() + "'" +
+                "}";
+    }
+}
+```
+### DemoApplication.java
+```java
+package com.example.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.mongodb.core.MongoTemplate;
+
+@SpringBootApplication
+public class DemoApplication implements CommandLineRunner {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DemoApplication.class, args);
+	}
+
+	@Autowired
+	MongoTemplate mongoTemplate;
+
+	@Override
+	public void run(String... args) throws Exception {
+		Employee employee = new Employee();
+		employee.setFirstName("John");
+		employee.setLastName("Doe");
+		employee.setAddress("Some City");
+
+		mongoTemplate.save(employee);
+
+		var employees = mongoTemplate.findAll(Employee.class);
+
+		employees.forEach(emp -> System.out.println(emp.toString()));
+	}
+
+}
+```
+
+### start
+
 ### https://start.spring.io/
 - Select:
     - Project: Maven Project
@@ -108,6 +352,22 @@ o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080
 o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
 ```
 
+### add default page - mdb-spring-boot\src\main\resources\static\index.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Lorem Ipsum Dolor Sit Amet</h1>
+</body>
+</html>
+```
+
 ### installing mongodb
 ```
 https://docs.mongodb.org/manual/core/introduction/
@@ -128,7 +388,7 @@ show dbs
 exit
 ```
 
-
+### info: https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html
 ### define application properties - resources\application.properties
 ```yml
 ### App config
@@ -541,6 +801,94 @@ public class MdbSpringBootApplication implements CommandLineRunner {
 }
 ```
 
+### MdbSpringBootApplication - another way
+### create: mdb-spring-boot\src\main\java\com\example\mdbspringboot\runner\Runner.java
+```java
+package com.example.mdbspringboot.runner;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+
+import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.model.Project;
+import com.example.mdbspringboot.repository.EmployeeRepository;
+
+public class Runner implements CommandLineRunner {
+
+    @Autowired
+    private EmployeeRepository repository;
+
+    // db.employees.deleteOne( { "email" : "john@smith.com" } );
+
+    @Override
+    public void run(String... args) throws Exception {
+        String email = "john@smith.com";
+
+        Employee employee = new Employee("John", "Smith", email, "Male", "Finance",
+                List.of("Project 3", "Project 5", "Project 6"), List.of(
+                        Project.builder().title("Test 1").description("1 Lorem ipsum dolor sit amet").build(),
+                        Project.builder().title("Test 2").description("2 Lorem ipsum dolor sit amet").build()),
+                5500.0, "123 345 6789");
+
+        repository.findAll().stream().filter(e -> e.getEmail().equals(email)).findFirst().ifPresentOrElse(s -> {
+            System.out.println("\n>>>>>> " + s + " already exists");
+        }, () -> {
+            System.out.println("\n>>>>>> Inserting employee " + employee);
+            repository.insert(employee);
+        });
+    }
+}
+```
+### MdbSpringBootApplication
+```java
+package com.example.mdbspringboot;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+import com.example.mdbspringboot.runner.Runner;
+
+@SpringBootApplication
+public class MdbSpringBootApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(MdbSpringBootApplication.class, args);
+	}
+
+	@Bean
+	public Runner getRunner() {
+		return new Runner();
+	}
+}
+```
+
+### using @Component annotation
+### Runner.java
+```java
+import org.springframework.stereotype.Component;
+
+// ...
+
+// add above the class
+@Component
+```
+
+### MdbSpringBootApplication
+```java
+// remove this
+import org.springframework.context.annotation.Bean;
+import com.example.mdbspringboot.runner.Runner;
+
+// remove this
+@Bean
+public Runner getRunner() {
+    return new Runner();
+}
+```
+
 ### Employee.java
 #### remove the existing constructor
 #### add @Builder annotation to the Employee class
@@ -556,7 +904,7 @@ import lombok.NoArgsConstructor;
 public class Employee { /* remove the existing constructor */ }
 ```
 
-### MdbSpringBootApplication - initialize Employee this way
+### Runner.java - initialize Employee this way
 ```java
 import java.time.LocalDateTime;
 
@@ -3930,6 +4278,9 @@ public ResponseEntity<?> ajaxSave(final RedirectAttributes redirectAttributes,
 mail.from=test@test.com
 mail.host=test@test.com
 mail.port=25
+
+# array example
+numbers1to6=1,2,3,4,5,6 # @Value("${numbers1to6}") private int[] someNumbers
 # ***** @Value annotation demo END *****
 ```
 

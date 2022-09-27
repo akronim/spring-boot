@@ -1,4 +1,0 @@
-created through vs-code command:
-Maven: Create Maven Project => spring boot blank archetype
-
-http://localhost:8080/

@@ -1,7 +1,0 @@
-https://start.spring.io/
-
-Add: Spring Web
-
-Generate
-
-+ demoing Runner and Application.properties file
