@@ -249,6 +249,12 @@ public class DemoApplication implements CommandLineRunner {
 }
 ```
 
+### TODO - to include
+- helm
+- job scheduler
+- mapping with @Mapper (org.mapstruct.Mapper)
+- more MongoTemplate Query examples
+
 ### start
 
 ### https://start.spring.io/
@@ -753,6 +759,12 @@ show collections
 db.employees.find().count()
 db.employees.find().pretty()
 exit
+```
+
+### add to: src\main\resources\application.properties
+```
+# to enable logging MongoDB queries
+logging.level.org.springframework.data.mongodb.core.MongoTemplate=DEBUG
 ```
 
 ### MdbSpringBootApplication - another way
