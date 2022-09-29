@@ -518,12 +518,6 @@ mongo mongodb://localhost:27017 -u rootuser -p rootpass
 ```
 show dbs;
 ```
-### importing data into db
-#### open a new terminal
-#### list running containers
-```
-docker ps
-```
 ### finally, modify application.properties
 ```
 ### Local MongoDB config - one-liners
@@ -765,6 +759,8 @@ exit
 ```
 # to enable logging MongoDB queries
 logging.level.org.springframework.data.mongodb.core.MongoTemplate=DEBUG
+# for a pretty-print response
+spring.jackson.serialization.indent-output=true
 ```
 
 ### MdbSpringBootApplication - another way
@@ -945,7 +941,7 @@ Employee employee = Employee.builder()
 
 ```
 
-### create and import data into mongodb database employeesdb (win)
+### create and import data into mongodb database employeesdb - no docker (win)
 ```
 mongoimport --db=employeesdb --collection=employees mongodb://localhost:27017 --drop --file=abs\path\to\mdb-spring-boot\employees.json --jsonArray
 ```
@@ -2512,6 +2508,7 @@ package com.example.mdbspringboot.repository;
 
 public interface CustomEmployeeRepository {
     boolean existsByEmail(String email);
+    public void filterAndSort();
 }
 ```
 
@@ -2527,6 +2524,10 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.data.domain.Sort;
+
 @Repository
 public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
     @Autowired
@@ -2538,6 +2539,27 @@ public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
         query.addCriteria(Criteria.where("email").is(email));
 
         return mongoTemplate.exists(query, Employee.class);
+    }
+
+    public void filterAndSort() {
+        Query query = new Query();
+
+        query.fields().include("id").include("firstName").include("salary");
+
+        List<Criteria> criteria = new ArrayList<>();
+
+        criteria.add(Criteria.where("firstName").regex("^A"));
+        criteria.add(Criteria.where("department").is("HR"));
+        criteria.add(Criteria.where("salary").lt(6000).gt(3000));
+
+        // sorting by salary
+        query.with(Sort.by(Sort.Direction.DESC, "salary"));
+
+        query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[criteria.size()])));
+
+        var employees = mongoTemplate.find(query, Employee.class);
+
+        employees.forEach(e -> System.out.println(e.toString()));
     }
 }
 ```
