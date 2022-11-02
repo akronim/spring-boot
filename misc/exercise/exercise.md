@@ -253,7 +253,10 @@ public class DemoApplication implements CommandLineRunner {
 - helm
 - job scheduler
 - mapping with @Mapper (org.mapstruct.Mapper)
+- cache
+- ObjectMapper
 - more MongoTemplate Query examples
+
 
 ### start
 
@@ -2508,7 +2511,9 @@ package com.example.mdbspringboot.repository;
 
 public interface CustomEmployeeRepository {
     boolean existsByEmail(String email);
-    public void filterAndSort();
+    List<Employee> filterAndSort(String regex, String department, Double salaryLt, Double salaryGt);
+    List<Employee> getByProjects(String[] projects);
+    Employee getByDepartmentAndProjectTitle(String department, String projectTitle);
 }
 ```
 
@@ -2520,6 +2525,7 @@ import com.example.mdbspringboot.model.Employee;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
@@ -2541,25 +2547,40 @@ public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
         return mongoTemplate.exists(query, Employee.class);
     }
 
-    public void filterAndSort() {
+    // db.employees.find({ "$and" : [{ "firstName" : { "$regex" : "^A"}}, { "department" : "IT"}, { "salary" : { "$lt" : 8000.0, "$gt" : 4000.0}}]}, {firstName:1, _id:1, salary:1})
+    public List<Employee> filterAndSort(String regex, String department, Double salaryLt, Double salaryGt) {
         Query query = new Query();
 
         query.fields().include("id").include("firstName").include("salary");
 
         List<Criteria> criteria = new ArrayList<>();
 
-        criteria.add(Criteria.where("firstName").regex("^A"));
-        criteria.add(Criteria.where("department").is("HR"));
-        criteria.add(Criteria.where("salary").lt(6000).gt(3000));
+        criteria.add(Criteria.where("firstName").regex(regex));
+        criteria.add(Criteria.where("department").is(department));
+        criteria.add(Criteria.where("salary").lt(salaryLt).gt(salaryGt));
 
         // sorting by salary
         query.with(Sort.by(Sort.Direction.DESC, "salary"));
 
         query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[criteria.size()])));
 
-        var employees = mongoTemplate.find(query, Employee.class);
+        return mongoTemplate.find(query, Employee.class);
+    }
 
-        employees.forEach(e -> System.out.println(e.toString()));
+    // db.employees.find({ "$and" : [{ "projects" : { "$ne" : null}}, { "projects" : { "$in" : ["Project 2", "Project 3"]}}]})
+    public List<Employee> getByProjects(String[] projects) {
+        Query query = new Query(new Criteria().andOperator(
+                Criteria.where("projects").ne(null),
+                Criteria.where("projects").in((Object[]) projects)));
+
+        return mongoTemplate.find(query, Employee.class);
+    }
+
+    // db.employees.find({ "$and" : [{ "department" : "HR"}, { "projects_2.title" : "Project 8"}]}, { firstName : 1, "department" : 1, "projects_2" : { "$elemMatch" : { "title" : "Project 8"}}})
+    public Employee getByDepartmentAndProjectTitle(String department, String projectTitle) {
+        String query = "{$and : [ {department:\"" + department + "\"}, {\"projects_2.title\": \"" + projectTitle + "\"} ]}";
+        String fields = "{firstName:1, department:1, projects_2: {$elemMatch: {title:\"" + projectTitle + "\"}}}";
+        return mongoTemplate.findOne(new BasicQuery(query, fields), Employee.class);
     }
 }
 ```
@@ -2583,6 +2604,38 @@ boolean existsByEmail(String email);
 // here we are using our custom repository
 public boolean existsByEmail(String email) {
     return employeeRepository.existsByEmail(email);
+}
+```
+
+### src\test\java\com\example\mdbspringboot\repository\EmployeeRepositoryTest.java
+```java
+// MongoTemplate
+@DisplayName("filterAndSort 1 | GIVEN ...  SHOULD ...")
+@Test
+void filterAndSort_x1() {
+    var employees = employeeRepository.filterAndSort("^A", "IT", 8000.0, 4000.0);
+
+    assertEquals(1, employees.size());
+
+}
+
+@DisplayName("getByProjects 1 | GIVEN ...  SHOULD ...")
+@Test
+void getByProjects_x1() {
+    var employees = employeeRepository.getByProjects(new String[] { "Project 2", "Project 3" });
+
+    assertEquals(2, employees.size());
+
+    assertTrue(employees.get(0).getProjects().contains("Project 2") || employees.get(0).getProjects().contains("Project 3"));
+}
+
+@DisplayName("getByDepartmentAndProjectTitle 1 | GIVEN ...  SHOULD ...")
+@Test
+void getByDepartmentAndProjectTitle_x1() {
+    var employee = employeeRepository.getByDepartmentAndProjectTitle("IT", "Test 1");
+
+    assertNotNull(employee);
+    assertEquals(1, employee.getProjects2().size());
 }
 ```
 

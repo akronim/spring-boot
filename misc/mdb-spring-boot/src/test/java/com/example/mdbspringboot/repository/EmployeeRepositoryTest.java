@@ -166,4 +166,34 @@ public class EmployeeRepositoryTest {
 
         assertFalse(employeeRepository.existsById(emp1.getId()));
     }
+
+    // MongoTemplate
+    @DisplayName("filterAndSort 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void filterAndSort_x1() {
+        var employees = employeeRepository.filterAndSort("^A", "IT", 8000.0, 4000.0);
+
+        assertEquals(1, employees.size());
+
+    }
+
+    @DisplayName("getByProjects 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void getByProjects_x1() {
+        var employees = employeeRepository.getByProjects(new String[] { "Project 2", "Project 3" });
+
+        assertEquals(2, employees.size());
+
+        assertTrue(employees.get(0).getProjects().contains("Project 2") || employees.get(0).getProjects().contains("Project 3"));
+    }
+
+    @DisplayName("getByDepartmentAndProjectTitle 1 | GIVEN ...  SHOULD ...")
+    @Test
+    void getByDepartmentAndProjectTitle_x1() {
+        var employee = employeeRepository.getByDepartmentAndProjectTitle("IT", "Test 1");
+
+        assertNotNull(employee);
+        assertEquals(1, employee.getProjects2().size());
+    }
+
 }
