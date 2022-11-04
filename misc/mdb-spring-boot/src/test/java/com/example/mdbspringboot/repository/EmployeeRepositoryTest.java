@@ -177,10 +177,10 @@ public class EmployeeRepositoryTest {
 
     }
 
-    @DisplayName("getByProjects 1 | GIVEN ...  SHOULD ...")
+    @DisplayName("getByProjectsAndDepartments 1 | GIVEN ...  SHOULD ...")
     @Test
-    void getByProjects_x1() {
-        var employees = employeeRepository.getByProjects(new String[] { "Project 2", "Project 3" });
+    void getByProjectsAndDepartments_x1() {
+        var employees = employeeRepository.getByProjectsAndDepartments(new String[] { "Project 2", "Project 3" }, new String[] { "IT", "Production" });
 
         assertEquals(2, employees.size());
 

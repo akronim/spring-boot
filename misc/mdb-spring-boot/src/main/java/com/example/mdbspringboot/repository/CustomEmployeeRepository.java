@@ -7,6 +7,7 @@ import com.example.mdbspringboot.model.Employee;
 public interface CustomEmployeeRepository {
     boolean existsByEmail(String email);
     List<Employee> filterAndSort(String regex, String department, Double salaryLt, Double salaryGt);
-    List<Employee> getByProjects(String[] projects);
+    List<Employee> getByProjectsAndDepartments(String[] projects, String[] departments);
     Employee getByDepartmentAndProjectTitle(String department, String projectTitle);
+    List<String> filterSportsNames(String regex);
 }

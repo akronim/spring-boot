@@ -757,6 +757,10 @@ db.employees.find().count()
 db.employees.find().pretty()
 exit
 ```
+### connect to db
+```
+mongosh mongodb://localhost:27017/employeesdb
+```
 
 ### add to: src\main\resources\application.properties
 ```
@@ -2505,6 +2509,48 @@ public class EmployeeServiceMiscTest {
 }
 ```
 
+### mongodb
+```js
+db.employees.find({"firstName":{$ne:null}}).sort({"department":-1}).limit(5)
+db.employees.deleteOne({"lastName":"Smith"})
+db.employees.findOne({_id: ObjectId("62b0554ba7c4e213fb40d491")})
+db.employees.find({ "projects_2.title": 'Project 9' }, {_id: 0}).pretty()
+db.employees.find({ $and: [{"projects_2.title": "Project 2"}, {department:"IT"}]  }, {_id: 0, firstName:1}).sort({firstName:1})
+db.employees.aggregate( { $project: {count: {$size: "$projects_2"}}})
+db.employees.find({projects:{$ne:null}}).count()
+db.employees.find({ 'projects_2': { $elemMatch: { "title" : "Project 9", "title": "Project 8" } }}).count()
+db.employees.find({"someProperty" : {"$exists" : true, "$ne" : ""}})
+db.employees.find({"someProperty" : {"$exists" : true}}).count()
+db.employees.updateOne({"lastName" : 'Smith'}, {$set: { "projects" : ['Project 4', 'Project 6', 'Project 7']}})
+db.employees.find({$and:[{createdAt:{"$gte":ISODate("2021-12-31T22:01:25.000Z")}}, {createdAt:{"$lte":new Date()}}]}, {_id:0,createdAt:1}).sort({createdAt:1})
+
+db.sportNames.insert({"names": ["TENNIS","HOCKEY","BASKETBALL","VOLLEYBALL","BEACH_VOLLEYBALL","HANDBALL","TABLE_TENNIS","BADMINTON","BEACH_FOOTBALL","FUTSAL","FLOORBALL","SNOOKER","GOLF","BASEBALL","RUGBY_LEAGUE","RUGBY_UNION","DARTS","SKI_JUMPING","BIATHLON","CROSS_COUNTRY","SPEED_SKATING","WATER_POLO","MOTO_GP","FORMULA1","CYCLING","ENTERTAINMENT","BOX","INLINE_HOCKEY","AMERICAN_FOOTBALL","ALPINE_SKIING","NORDIC_COMBINATION","SNOWBOARDING","CURLING","SPEEDWAY","POLITICS","ATHLETICS","BASKETBALL3X3","OLYMPIC_GAMES","PROGAMING","FOOTBALL","MMA"]})
+db.sportNames.find({"names":"MMA"},{"names.$":1})
+db.sportNames.find({"names":"MMA"},{"names":1})
+db.sportNames.find({ "names": { $regex : "ball", $options : 'i' } }, { "names.$":1 })
+db.sportNames.aggregate([ { $unwind: "$names" }, { $match: { "names": { $regex : "ball", $options : "i" } } }, { $project: { "_id": 0, "names": 1 } } ])
+```
+
+### create mdb-spring-boot\src\main\java\com\example\mdbspringboot\model\SportNames.java
+```java
+package com.example.mdbspringboot.model;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Set;
+
+@Data
+@Document(collection = "sportNames")
+public class SportName {
+    @Id
+    private String id;
+    private Set<String> names;
+}
+```
+
+
 ### creating custom repository - interface src\main\java\com\example\mdbspringboot\repository\CustomEmployeeRepository.java
 ```java
 package com.example.mdbspringboot.repository;
@@ -2512,8 +2558,9 @@ package com.example.mdbspringboot.repository;
 public interface CustomEmployeeRepository {
     boolean existsByEmail(String email);
     List<Employee> filterAndSort(String regex, String department, Double salaryLt, Double salaryGt);
-    List<Employee> getByProjects(String[] projects);
+    List<Employee> getByProjectsAndDepartments(String[] projects, String[] departments);
     Employee getByDepartmentAndProjectTitle(String department, String projectTitle);
+    List<String> filterSportsNames(String regex);
 }
 ```
 
@@ -2522,6 +2569,12 @@ public interface CustomEmployeeRepository {
 package com.example.mdbspringboot.repository;
 
 import com.example.mdbspringboot.model.Employee;
+import com.example.mdbspringboot.model.SportName;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.springframework.data.domain.Sort;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -2530,9 +2583,10 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 
 @Repository
 public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
@@ -2567,11 +2621,14 @@ public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
         return mongoTemplate.find(query, Employee.class);
     }
 
-    // db.employees.find({ "$and" : [{ "projects" : { "$ne" : null}}, { "projects" : { "$in" : ["Project 2", "Project 3"]}}]})
-    public List<Employee> getByProjects(String[] projects) {
+    // db.employees.find({ "$and" : [{ "projects" : { "$ne" : null}}, { "projects" : { "$in" : ["Project 2", "Project 3"]}}, { "$or" : [{ "department" : "IT"}, { "department" : "Production"}]} ]})
+    public List<Employee> getByProjectsAndDepartments(String[] projects, String[] departments) {
         Query query = new Query(new Criteria().andOperator(
                 Criteria.where("projects").ne(null),
-                Criteria.where("projects").in((Object[]) projects)));
+                Criteria.where("projects").in((Object[]) projects),
+                new Criteria().orOperator(
+                        Criteria.where("department").is(departments[0]),
+                        Criteria.where("department").is(departments[1]))));
 
         return mongoTemplate.find(query, Employee.class);
     }
@@ -2582,6 +2639,28 @@ public class CustomEmployeeRepositoryImpl implements CustomEmployeeRepository {
         String fields = "{firstName:1, department:1, projects_2: {$elemMatch: {title:\"" + projectTitle + "\"}}}";
         return mongoTemplate.findOne(new BasicQuery(query, fields), Employee.class);
     }
+
+    public List<String> filterSportsNames(String regex) {
+
+        UnwindOperation unwindStage = Aggregation.unwind("names");
+
+        MatchOperation matchStage = Aggregation.match(new Criteria("names").regex(regex, "i"));
+
+        ProjectionOperation projectStage = Aggregation.project("names");
+
+        Aggregation aggregation = Aggregation.newAggregation(unwindStage, matchStage, projectStage);
+
+        List<String> names = new ArrayList<>();
+
+        mongoTemplate
+            .aggregate(aggregation, "sportNames", SportName.class)
+            .getMappedResults().forEach(liveSportName -> names.addAll(liveSportName.getNames()));
+
+        Collections.sort(names);
+
+        return names;
+    }
+
 }
 ```
 
@@ -2619,10 +2698,10 @@ void filterAndSort_x1() {
 
 }
 
-@DisplayName("getByProjects 1 | GIVEN ...  SHOULD ...")
+@DisplayName("getByProjectsAndDepartments 1 | GIVEN ...  SHOULD ...")
 @Test
-void getByProjects_x1() {
-    var employees = employeeRepository.getByProjects(new String[] { "Project 2", "Project 3" });
+void getByProjectsAndDepartments_x1() {
+    var employees = employeeRepository.getByProjectsAndDepartments(new String[] { "Project 2", "Project 3" }, new String[] { "IT", "Production" });
 
     assertEquals(2, employees.size());
 
